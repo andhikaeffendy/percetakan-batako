@@ -1,11 +1,10 @@
 -- ============================================================
 -- seed_production.sql — Seed data untuk production
--- Gunakan file ini jika tidak bisa menjalankan php seeder.php
--- Jalankan via phpMyAdmin atau MySQL CLI:
---   mysql -u USER -p DB_NAME < seed_production.sql
+-- Gunakan file ini SETELAH database_deploy.sql
+-- Jalankan via phpMyAdmin:
+--   1. Pilih database Anda (if0_XXXXX_batako_maros)
+--   2. Tab SQL → Choose File → seed_production.sql → Go
 -- ============================================================
-
-USE db_batako_maros;
 
 -- 1. Users (password sudah di-hash bcrypt)
 -- pemilik / admin123
