@@ -4,6 +4,10 @@ vendor/
 *.log
 __pycache__/
 node_modules/
-assets/design_ref/
+*.jpeg
+*.jpg
+*.png
 *.zip
 *.rar
+test_*.php
+debug.php
