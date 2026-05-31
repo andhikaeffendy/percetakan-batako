@@ -9,16 +9,17 @@ Website operasional untuk **UMKM Percetakan Batako Maros, Ambon, Maluku** — me
 - [Fitur Utama](#-fitur-utama)
 - [Arsitektur Project](#-arsitektur-project)
 - [Role & Akses](#-role--akses)
-- [Prasyarat / Software Wajib](#-prasyarat--software-wajib-di-install)
-- [Panduan Instalasi Lengkap](#-panduan-instalasi-lengkap-dari-0)
-  - [Step 1: Install Software](#step-1-install-software)
-  - [Step 2: Clone / Download Project](#step-2-clone--download-project)
-  - [Step 3: Install Composer Dependencies](#step-3-install-composer-dependencies)
-  - [Step 4: Setup Environment (.env)](#step-4-setup-environment-env)
-  - [Step 5: Buat Database](#step-5-buat-database)
-  - [Step 6: Seed Data Awal](#step-6-seed-data-awal)
-  - [Step 7: Jalankan Server](#step-7-jalankan-server)
-  - [Step 8: Buka Website & Login](#step-8-buka-website--login)
+- [Install di Windows](#-install-di-windows--step-by-step)
+  - [1. Install XAMPP](#1-install-xampp-apache--mysql--php)
+  - [2. Install Composer](#2-install-composer)
+  - [3. Install Git](#3-install-git-opsional-untuk-clone)
+- [Jalankan Project di Windows](#-jalankan-project-di-windows)
+  - [Step 1: Download](#step-1-download-project)
+  - [Step 2: Dependencies](#step-2-install-dependencies)
+  - [Step 3: Setup .env](#step-3-setup-env)
+  - [Step 4: Database](#step-4-buat-database)
+  - [Step 5: Seed Data](#step-5-seed-data)
+  - [Step 6: Jalankan](#step-6-jalankan)
 - [Kredensial Login](#-kredensial-login)
 - [Struktur Folder Lengkap](#-struktur-folder-lengkap)
 - [Keamanan](#-keamanan)
@@ -125,255 +126,107 @@ stok    ←── produksi + penjualan (aggregate)
 
 ---
 
-## 💿 Prasyarat / Software Wajib di Install
+## 💿 Install di Windows — Step by Step
 
-Sebelum memulai, pastikan software berikut **sudah terinstall** di komputer Anda:
-
-| Software | Versi Minimum | Fungsi | Link Download |
-|----------|--------------|--------|---------------|
-| **XAMPP** | 7.4+ | Apache + MySQL + PHP | https://www.apachefriends.org |
-| **Composer** | 2.0+ | PHP dependency manager | https://getcomposer.org |
-| **Git** | 2.0+ | Version control (opsional) | https://git-scm.com |
-| **Browser** | Chrome/Firefox | Akses website | - |
-
-> ⚠️ **Penting**: XAMPP **WAJIB** diinstall terlebih dahulu. Pastikan PHP versi 7.4 atau lebih tinggi (cek: `php -v`).
+Semua software di bawah **WAJIB** diinstall satu per satu.
 
 ---
 
-## 🚀 Panduan Instalasi Lengkap (dari 0)
+### 1. Install XAMPP (Apache + MySQL + PHP)
 
-Ikuti langkah-langkah berikut **secara berurutan**. Jangan melompati step.
+XAMPP adalah paket yang berisi Apache (web server), MySQL (database), dan PHP.
 
----
+**Download & Install:**
+1. Buka https://www.apachefriends.org
+2. Klik **Download** (versi terbaru untuk Windows)
+3. Buka file `.exe` yang terdownload -> **Next -> Next -> Finish**
+4. Setelah selesai, buka **XAMPP Control Panel** (dari Start Menu / Desktop)
 
-### Step 1: Install Software
+**Jalankan Apache dan MySQL:**
+1. Di XAMPP Control Panel, klik **Start** pada:
+   - Apache (tunggu jadi hijau)
+   - MySQL (tunggu jadi hijau)
 
-#### 1a. Install XAMPP
+> Jika port 80 error: Klik **Config** di baris Apache -> **httpd.conf** -> cari `Listen 80` -> ganti `Listen 8080` -> Start ulang Apache.
+> Jika MySQL tidak bisa start: Klik **Config** di baris MySQL -> **my.ini** -> ganti port `3306` ke `3307` -> Start ulang.
 
-1. Download XAMPP dari https://www.apachefriends.org
-2. Install seperti biasa (Next → Next → Finish)
-3. Buka **XAMPP Control Panel**
-4. Klik **Start** pada:
-   - ✅ **Apache** (port 80)
-   - ✅ **MySQL** (port 3306)
-
-```
-[XAMPP Control Panel]
-  Apache  → [Start]  ✅ Running (Port 80)
-  MySQL   → [Start]  ✅ Running (Port 3306)
-```
-
-> 💡 Jika port 80 bentrok (misal karena IIS/Skype), ubah port Apache di Config → httpd.conf menjadi `8080`.
-
-#### 1b. Install Composer
-
-- **Windows**: Download dan jalankan Composer-Setup.exe dari https://getcomposer.org
-- **Mac**: `brew install composer`
-- **Linux**: `sudo apt install composer`
-
-Verifikasi:
-
-```bash
-php -v        # Harus muncul PHP 7.4.x atau 8.x
-composer -V   # Harus muncul Composer 2.x
-```
+**Verifikasi:** Buka browser -> `http://localhost` -> halaman orange XAMPP muncul = berhasil.
 
 ---
 
-### Step 2: Clone / Download Project
+### 2. Install Composer
 
-#### Opsi A: Clone via Git (disarankan)
+Composer untuk install library PHP (Dompdf, PhpSpreadsheet, Dotenv).
 
-```bash
-cd /Applications/XAMPP/htdocs          # Mac
-# ATAU
-cd C:\xampp\htdocs                     # Windows
+**Download & Install:**
+1. Buka https://getcomposer.org
+2. Klik **Download** -> **Composer-Setup.exe**
+3. Jalankan installer
+4. Saat pilih PHP path, **pilih**: `C:\xampp\php\php.exe`
+5. Next -> Install -> Finish
 
-git clone https://github.com/username/umkm-percetakan-batako.git
-cd umkm-percetakan-batako
-```
-
-#### Opsi B: Download ZIP & Extract
-
-1. Download ZIP project
-2. Extract ke folder `htdocs` XAMPP:
-
-```
-Windows: C:\xampp\htdocs\umkm-percetakan-batako\
-Mac:     /Applications/XAMPP/htdocs/umkm-percetakan-batako/
-Linux:   /opt/lampp/htdocs/umkm-percetakan-batako/
-```
-
-Pastikan struktur folder setelah extract:
-
-```
-umkm-percetakan-batako/
-├── assets/
-├── config/
-├── helpers/
-├── layouts/
-├── operator/
-├── pemilik/
-├── vendor/          # ← Masih kosong, akan diisi di Step 3
-├── database.sql
-├── seeder.php
-├── composer.json
-├── .env.example
-├── .htaccess
-└── README.md
-```
+**Verifikasi:** Buka CMD -> ketik `php -v` dan `composer -V` -> muncul versi.
 
 ---
 
-### Step 3: Install Composer Dependencies
+### 3. Install Git (opsional, untuk clone)
 
-Buka terminal/CMD di folder project, lalu jalankan:
+1. Buka https://git-scm.com
+2. Download -> jalankan installer -> Next -> Finish
+3. Verifikasi: `git --version`
 
-```bash
-cd umkm-percetakan-batako
+---
+
+## 🚀 Jalankan Project di Windows
+
+### Step 1: Download Project
+
+**Clone dari GitHub:**
+```cmd
+cd C:\xampp\htdocs
+git clone https://github.com/andhikaeffendy/percetakan-batako.git
+cd percetakan-batako
+```
+
+**Atau download ZIP:** Buka GitHub repo -> Code -> Download ZIP -> extract ke `C:\xampp\htdocs\percetakan-batako\`
+
+### Step 2: Install Dependencies
+
+Buka CMD:
+```cmd
+cd C:\xampp\htdocs\percetakan-batako
 composer install
 ```
+Tunggu 1-3 menit. Folder `vendor/` akan terisi.
 
-Tunggu hingga selesai. Output yang diharapkan:
+### Step 3: Setup .env
 
-```
-Installing dependencies from lock file
-...
-Generating autoload files
-```
-
-Folder `vendor/` sekarang akan berisi package:
-- `dompdf/dompdf` — untuk cetak PDF
-- `phpoffice/phpspreadsheet` — untuk export Excel
-- `vlucas/phpdotenv` — untuk .env config
-
----
-
-### Step 4: Setup Environment (.env)
-
-```bash
-# Copy file .env.example menjadi .env
-cp .env.example .env
+Copy `.env.example` ke `.env`:
+```cmd
+copy .env.example .env
 ```
 
-File `.env` default sudah sesuai untuk XAMPP lokal:
+### Step 4: Buat Database
 
-```env
-DB_HOST=localhost
-DB_NAME=db_batako_maros
-DB_USER=root
-DB_PASS=
+Buka `http://localhost/phpmyadmin` -> tab SQL -> copy-paste isi `database.sql` -> Go.
 
-APP_URL=http://localhost/umkm-percetakan-batako
-APP_NAME=Percetakan Batako Maros
-APP_ENV=development
+Atau via CMD:
+```cmd
+cd C:\xampp\htdocs\percetakan-batako
+mysql -u root < database.sql
 ```
 
-> 💡 **Hanya ubah jika diperlukan** (misal: password MySQL Anda bukan kosong, atau port berbeda).
+### Step 5: Seed Data
 
----
-
-### Step 5: Buat Database
-
-#### Opsi A: Via phpMyAdmin (disarankan untuk pemula)
-
-1. Buka browser → `http://localhost/phpmyadmin`
-2. Klik **SQL** di tab atas
-3. Buka file `database.sql` di text editor, **copy semua isinya**
-4. **Paste ke textarea SQL** di phpMyAdmin
-5. Klik **Go** / **Kirim**
-
-✅ Hasil: Database `db_batako_maros` dengan 7 tabel siap digunakan.
-
-#### Opsi B: Via Command Line
-
-```bash
-# Masuk ke MySQL
-mysql -u root
-
-# (Jika ada password: mysql -u root -p)
-```
-
-Lalu jalankan di dalam MySQL prompt:
-
-```sql
-source C:\xampp\htdocs\umkm-percetakan-batako\database.sql;
--- Sesuaikan path dengan lokasi project Anda
-exit;
-```
-
-✅ Verifikasi: jalankan `SHOW DATABASES;` — `db_batako_maros` harus muncul.
-
----
-
-### Step 6: Seed Data Awal
-
-Jalankan seeder dari terminal:
-
-```bash
-# Pastikan masih di folder project
+```cmd
 php seeder.php
 ```
 
-Output yang diharapkan:
+### Step 6: Jalankan
 
-```
-=== Seeder: Percetakan Batako Maros ===
+Buka browser -> `http://localhost/percetakan-batako`
 
-Membuat users...
-  ✓ pemilik / admin123 — pemilik@batakomaros.com (role: pemilik)
-  ✓ operator / operator123 — operator@batakomaros.com (role: operator)
-
-Membuat data pekerja...
-  ✓ Ahmad Fauzi (Rp65.000/sak, aktif)
-  ✓ Budi Santoso (Rp65.000/sak, aktif)
-  ... (5 pekerja total)
-
-Membuat stok awal...
-  ✓ Stok standar: 0
-  ✓ Stok besar: 0
-
-Membuat contoh data produksi...
-  ✓ 14 data produksi
-
-Membuat contoh data penjualan...
-  ✓ 14 data penjualan
-
-Memperbarui stok...
-  ✓ standar: stok=3285
-  ✓ besar: stok=1710
-
-=== Selesai! ===
-```
-
-> 💡 Seeder akan membuat data contoh 7 hari terakhir (produksi & penjualan) agar dashboard langsung terisi data.
-
----
-
-### Step 7: Jalankan Server
-
-#### Opsi A: XAMPP (disarankan)
-
-1. Buka **XAMPP Control Panel**
-2. Pastikan **Apache** & **MySQL** dalam keadaan **Running** (hijau)
-3. Buka browser → `http://localhost/umkm-percetakan-batako/`
-
-#### Opsi B: PHP Built-in Server (tanpa XAMPP)
-
-```bash
-# Pastikan MySQL tetap jalan dari XAMPP
-php -S localhost:8000
-```
-
-Lalu buka `http://localhost:8000`
-
----
-
-### Step 8: Buka Website & Login
-
-1. Buka browser → `http://localhost/umkm-percetakan-batako/`
-2. Anda akan diarahkan ke halaman **Login**
-3. Gunakan kredensial di bawah ini
+Login: `pemilik` / `admin123` atau `operator` / `operator123`
 
 ---
 
@@ -596,37 +449,6 @@ php seeder.php
 > support PHP 8.0+, MySQL, .htaccess, dan tanpa kartu kredit.
 
 ---
-
-### Langkah-langkah Deploy ke InfinityFree — Step by Step
-
----
-
-#### Sebelum Mulai — Cek Informasi Akun Anda
-
-Setelah login ke panel InfinityFree, Anda akan melihat halaman utama akun:
-
-```
-┌─────────────────────────────────────────────┐
-│  Account: epiz_XXXXX                        │  ← INI ACCOUNT ID ANDA
-│  Main Domain: epiz_XXXXX.infinityfreeapp.com │  ← INI URL WEBSITE ANDA
-│  PHP Version: 8.0                           │
-└─────────────────────────────────────────────┘
-```
-
-> 📝 **Catat 2 hal ini di notepad/HP:**
-> 1. **Account ID**: `epiz_XXXXX` (angka setelah `epiz_`)
-> 2. **Domain URL**: `epiz_XXXXX.infinityfreeapp.com`
-
----
-
-#### Step 1: Buat Database MySQL
-
-1. Buka [https://www.infinityfree.com](https://www.infinityfree.com)
-2. Klik **Get Free Hosting**
-3. Isi form pendaftaran (email, password)
-4. Verifikasi email (cek inbox/spam)
-5. Login ke panel InfinityFree
-
 
 ### Langkah-langkah Deploy ke InfinityFree — Step by Step
 
