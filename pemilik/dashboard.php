@@ -59,6 +59,19 @@ $pendapatanBulanIni = (int)$stmt->fetchColumn();
 $stmt = $db->query("SELECT COUNT(*) as total FROM pekerja WHERE status = 'aktif'");
 $pekerjaAktif = (int)$stmt->fetch()['total'];
 
+// KPI: PENGELUARAN BULAN INI
+$stmt = $db->prepare("SELECT COALESCE(SUM(nominal), 0) FROM pengeluaran WHERE tanggal_pengeluaran BETWEEN ? AND ?");
+$stmt->execute([$monthStart, $monthEnd]);
+$pengeluaranBulanIni = (int)$stmt->fetchColumn();
+
+// KPI: GAJI BULAN INI
+$stmt = $db->prepare("SELECT COALESCE(SUM(total_gaji), 0) FROM gaji WHERE periode_awal >= ? AND periode_akhir <= ?");
+$stmt->execute([$monthStart, $monthEnd]);
+$gajiBulanIni = (int)$stmt->fetchColumn();
+
+// KPI: LABA BERSIH BULAN INI
+$labaBersih = $pendapatanBulanIni - $pengeluaranBulanIni - $gajiBulanIni;
+
 // DEVIASI
 $deviasi = $produksiHariIni > 0 ? round((($produksiHariIni - $penjualanHariIni) / $produksiHariIni) * 100, 1) : 0;
 
@@ -104,24 +117,24 @@ include __DIR__ . '/../layouts/header.php';
         </h4>
         <p style="color:var(--text-muted);margin:0;font-size:13px;">Pantau seluruh aktivitas operasional percetakan batako</p>
     </div>
-    <span class="badge badge-success" style="font-size:12px;padding:6px 14px;">🟢 Sistem Aktif</span>
+    <span class="badge badge-success" style="font-size:11px;padding:6px 14px;">🟢 Sistem Aktif</span>
 </div>
 
 <!-- ===== KPI CARDS ROW (4 CARDS LIKE ANALISA DESIGN) ===== -->
 <div class="row g-4 mb-5">
     <!-- CARD 1: PRODUKSI (BLUE) -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-2 col-md-4 col-sm-6">
         <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
             <div style="height:6px;background:var(--primary);"></div>
-            <div class="card-body text-center" style="padding:28px 16px 24px;">
+            <div class="card-body text-center" style="padding:24px 12px 20px;">
                 <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:rgba(37,99,235,0.12);">
-                    <span style="font-size:26px;">🏭</span>
+                     style="width:48px;height:48px;border-radius:14px;background:rgba(37,99,235,0.12);">
+                    <span style="font-size:22px;">🏭</span>
                 </div>
-                <div style="font-size:34px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
+                <div style="font-size:26px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
                     <?= number_format($produksiHariIni) ?>
                 </div>
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">
                     PRODUKSI HARI INI
                 </div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
@@ -132,18 +145,18 @@ include __DIR__ . '/../layouts/header.php';
     </div>
 
     <!-- CARD 2: PENJUALAN (ORANGE) -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-2 col-md-4 col-sm-6">
         <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
             <div style="height:6px;background:var(--orange);"></div>
-            <div class="card-body text-center" style="padding:28px 16px 24px;">
+            <div class="card-body text-center" style="padding:24px 12px 20px;">
                 <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:rgba(217,119,6,0.12);">
-                    <span style="font-size:26px;">💰</span>
+                     style="width:48px;height:48px;border-radius:14px;background:rgba(217,119,6,0.12);">
+                    <span style="font-size:22px;">💰</span>
                 </div>
-                <div style="font-size:34px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
+                <div style="font-size:26px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
                     <?= number_format($penjualanHariIni) ?>
                 </div>
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">
                     PENJUALAN HARI INI
                 </div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
@@ -154,18 +167,18 @@ include __DIR__ . '/../layouts/header.php';
     </div>
 
     <!-- CARD 3: STOK (GREEN) -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-2 col-md-4 col-sm-6">
         <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
             <div style="height:6px;background:var(--green);"></div>
-            <div class="card-body text-center" style="padding:28px 16px 24px;">
+            <div class="card-body text-center" style="padding:24px 12px 20px;">
                 <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:rgba(22,163,74,0.12);">
-                    <span style="font-size:26px;">📦</span>
+                     style="width:48px;height:48px;border-radius:14px;background:rgba(22,163,74,0.12);">
+                    <span style="font-size:22px;">📦</span>
                 </div>
-                <div style="font-size:34px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
+                <div style="font-size:26px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
                     <?= number_format($totalStok) ?>
                 </div>
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">
                     STOK TERSEDIA
                 </div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
@@ -176,25 +189,51 @@ include __DIR__ . '/../layouts/header.php';
     </div>
 
     <!-- CARD 4: DEVIASI (RED/GREEN) -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-2 col-md-4 col-sm-6">
         <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
             <div style="height:6px;background:<?= $deviasi >= 0 ? 'var(--green)' : 'var(--red)' ?>;"></div>
-            <div class="card-body text-center" style="padding:28px 16px 24px;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:<?= $deviasi >= 0 ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)' ?>;">
-                    <span style="font-size:26px;">📊</span>
+            <div class="card-body text-center" style="padding:24px 12px 20px;">
+                <div class="d-inline-flex align-items-center justify-content-center mb-2"
+                     style="width:48px;height:48px;border-radius:14px;background:<?= $deviasi >= 0 ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)' ?>;">
+                    <span style="font-size:22px;">📊</span>
                 </div>
-                <div style="font-size:34px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
-                    <?= $deviasi ?>%
+                <div style="font-size:22px;font-weight:800;line-height:1.1;margin-bottom:4px;"><?= $deviasi ?>%</div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">DEVIASI</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;opacity:0.7;">
+                    <span style="color:<?= $deviasi >= 0 ? 'var(--green)' : 'var(--red)' ?>;"><?= $deviasi >= 0 ? 'Surplus' : 'Defisit' ?></span>
                 </div>
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">
-                    DEVIASI
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 5: PENGELUARAN BULAN INI (RED) -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+            <div style="height:6px;background:var(--red);"></div>
+            <div class="card-body text-center" style="padding:24px 12px 20px;">
+                <div class="d-inline-flex align-items-center justify-content-center mb-2"
+                     style="width:48px;height:48px;border-radius:14px;background:rgba(220,38,38,0.12);">
+                    <span style="font-size:22px;">💸</span>
                 </div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
-                    <span style="color:<?= $deviasi >= 0 ? 'var(--green)' : 'var(--red)' ?>;font-weight:700;">
-                        <?= $deviasi >= 0 ? 'Surplus' : 'Defisit' ?>
-                    </span>
+                <div style="font-size:16px;font-weight:800;line-height:1.1;margin-bottom:4px;"><?= formatRupiah($pengeluaranBulanIni) ?></div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">PENGELUARAN</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;opacity:0.7;">Bulan ini</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 6: LABA BERSIH (GREEN/RED) -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+            <div style="height:6px;background:<?= $labaBersih >= 0 ? 'var(--green)' : 'var(--red)' ?>;"></div>
+            <div class="card-body text-center" style="padding:24px 12px 20px;">
+                <div class="d-inline-flex align-items-center justify-content-center mb-2"
+                     style="width:48px;height:48px;border-radius:14px;background:<?= $labaBersih >= 0 ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)' ?>;">
+                    <span style="font-size:22px;">📉</span>
                 </div>
+                <div style="font-size:16px;font-weight:800;line-height:1.1;margin-bottom:4px;color:<?= $labaBersih >= 0 ? 'var(--green)' : 'var(--red)' ?>;"><?= formatRupiah($labaBersih) ?></div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">LABA BERSIH</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;opacity:0.7;">Bulan ini</div>
             </div>
         </div>
     </div>
@@ -206,7 +245,7 @@ include __DIR__ . '/../layouts/header.php';
         <div class="card">
             <div class="card-header">
                 <h5>Produksi vs Penjualan (7 Hari Terakhir)</h5>
-                <span style="font-size:12px;color:var(--text-muted);">Perbandingan harian</span>
+                <span style="font-size:11px;color:var(--text-muted);">Perbandingan harian</span>
             </div>
             <div class="card-body">
                 <div class="chart-container" style="min-height:280px;"><canvas id="chartProduksiPenjualan"></canvas></div>
@@ -248,7 +287,7 @@ include __DIR__ . '/../layouts/header.php';
         <div class="card">
             <div class="card-header">
                 <h5>Pendapatan (30 Hari Terakhir)</h5>
-                <span style="font-size:12px;color:var(--text-muted);">Total: <?= formatRupiah(array_sum($pendapatan30)) ?></span>
+                <span style="font-size:11px;color:var(--text-muted);">Total: <?= formatRupiah(array_sum($pendapatan30)) ?></span>
             </div>
             <div class="card-body">
                 <div class="chart-container" style="min-height:250px;"><canvas id="chartPendapatan"></canvas></div>
@@ -262,7 +301,7 @@ include __DIR__ . '/../layouts/header.php';
                     <div style="height:4px;background:var(--primary);border-radius:16px 16px 0 0;"></div>
                     <div class="card-body py-4">
                         <div style="font-size:30px;margin-bottom:8px;">🏭</div>
-                        <div style="font-size:26px;font-weight:800;color:var(--primary);"><?= number_format($produksiBulanIni) ?></div>
+                        <div style="font-size:22px;font-weight:800;color:var(--primary);"><?= number_format($produksiBulanIni) ?></div>
                         <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">PRODUKSI BULAN INI</div>
                     </div>
                 </div>
@@ -272,7 +311,7 @@ include __DIR__ . '/../layouts/header.php';
                     <div style="height:4px;background:var(--orange);border-radius:16px 16px 0 0;"></div>
                     <div class="card-body py-4">
                         <div style="font-size:30px;margin-bottom:8px;">💰</div>
-                        <div style="font-size:26px;font-weight:800;color:var(--orange);"><?= number_format($penjualanMingguIni) ?></div>
+                        <div style="font-size:22px;font-weight:800;color:var(--orange);"><?= number_format($penjualanMingguIni) ?></div>
                         <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px;">PENJUALAN MINGGU INI</div>
                     </div>
                 </div>

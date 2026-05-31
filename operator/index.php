@@ -41,6 +41,13 @@ $stmt->execute([$monthStart, $monthEnd]);
 $pendapatanBulanIni = (int)$stmt->fetchColumn();
 
 // ──────────────────────────────────────────────
+// KPI CARD 4 — PENGELUARAN HARI INI (RED)
+// ──────────────────────────────────────────────
+$stmt = $db->prepare("SELECT COALESCE(SUM(nominal), 0) as total FROM pengeluaran WHERE tanggal_pengeluaran = ?");
+$stmt->execute([$today]);
+$pengeluaranHariIni = (int)$stmt->fetchColumn();
+
+// ──────────────────────────────────────────────
 // RECENT DATA
 // ──────────────────────────────────────────────
 $recentBahan = $db->query("SELECT * FROM bahan_baku ORDER BY id DESC LIMIT 5")->fetchAll();
@@ -66,7 +73,7 @@ include __DIR__ . '/../layouts/header.php';
 <!-- ===== KPI CARDS — EXACT 3-COLUMN ANALISA DESIGN ===== -->
 <div class="row g-4 mb-5">
     <!-- CARD 1: PRODUKSI (BLUE) -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
             <div style="height:6px;background:var(--primary);"></div>
             <div class="card-body text-center" style="padding:28px 20px 24px;">
@@ -88,7 +95,7 @@ include __DIR__ . '/../layouts/header.php';
     </div>
 
     <!-- CARD 2: STOK TERSEDIA (GREEN) -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
             <div style="height:6px;background:var(--green);"></div>
             <div class="card-body text-center" style="padding:28px 20px 24px;">
@@ -110,7 +117,7 @@ include __DIR__ . '/../layouts/header.php';
     </div>
 
     <!-- CARD 3: PENDAPATAN (ORANGE) -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
             <div style="height:6px;background:var(--orange);"></div>
             <div class="card-body text-center" style="padding:28px 20px 24px;">
@@ -130,25 +137,47 @@ include __DIR__ . '/../layouts/header.php';
             </div>
         </div>
     </div>
+
+    <!-- CARD 4: PENGELUARAN (RED) -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+            <div style="height:6px;background:var(--red);"></div>
+            <div class="card-body text-center" style="padding:28px 20px 24px;">
+                <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:56px;height:56px;border-radius:16px;background:rgba(220,38,38,0.12);">
+                    <span style="font-size:26px;">💸</span>
+                </div>
+                <div style="font-size:28px;font-weight:800;color:var(--red);line-height:1.1;margin-bottom:6px;">
+                    <?= formatRupiah($pengeluaranHariIni) ?>
+                </div>
+                <div style="font-size:13px;color:var(--text-muted);font-weight:500;letter-spacing:0.3px;">
+                    PENGELUARAN HARI INI
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
+                    Operasional harian
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ===== QUICK ACTION CARDS ===== -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <a href="input_bahan_baku.php" class="quick-card" style="padding:24px 20px;">
             <div class="quick-icon blue" style="width:52px;height:52px;font-size:24px;margin-bottom:12px;">📦</div>
             <h5 style="font-size:15px;">Input Bahan Baku</h5>
             <p style="font-size:12px;">Catat penggunaan semen &amp; pasir harian</p>
         </a>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <a href="input_produksi.php" class="quick-card" style="padding:24px 20px;">
             <div class="quick-icon green" style="width:52px;height:52px;font-size:24px;margin-bottom:12px;">🏭</div>
             <h5 style="font-size:15px;">Input Produksi Harian</h5>
             <p style="font-size:12px;">Input target &amp; realisasi produksi batako</p>
         </a>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <a href="input_penjualan.php" class="quick-card" style="padding:24px 20px;">
             <div class="quick-icon orange" style="width:52px;height:52px;font-size:24px;margin-bottom:12px;">💰</div>
             <h5 style="font-size:15px;">Input Penjualan</h5>
