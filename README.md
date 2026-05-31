@@ -50,7 +50,8 @@ Website operasional untuk **UMKM Percetakan Batako Maros, Ambon, Maluku** — me
 | 4 | **CRUD Lengkap** | Bahan Baku, Produksi, Penjualan, Tenaga Kerja |
 | 5 | **Stok Otomatis** | Dihitung dari total produksi − total penjualan secara real-time |
 | 6 | **Gaji Otomatis** | Total sak semen × tarif per sak per pekerja |
-| 7 | **Validasi Stok** | Penjualan tidak boleh melebihi stok tersedia |
+| 7 | **Pengeluaran** | Catat pengeluaran operasional (listrik, air, dll) + laba bersih |
+| 8 | **Validasi Stok** | Penjualan tidak boleh melebihi stok tersedia |
 | 8 | **Laporan** | Produksi vs Penjualan, Keuangan, Gaji + Chart.js |
 | 9 | **PDF & Excel** | Cetak laporan PDF (Dompdf) + Export data Excel (PhpSpreadsheet) |
 | 10 | **Automated Tests** | 65 test scenarios — database integrity, business logic, helper functions |
@@ -118,6 +119,7 @@ stok    ←── produksi + penjualan (aggregate)
 | | Data Produksi | CRUD lengkap + filter + export Excel/PDF |
 | | Data Penjualan | CRUD lengkap + filter + validasi stok |
 | | Data Tenaga Kerja | CRUD + toggle status aktif/nonaktif |
+| | Data Pengeluaran | CRUD + filter kategori + total |
 | | Perhitungan Gaji | Hitung & simpan gaji per periode |
 | | Laporan Produksi | Grafik + tabel produksi vs penjualan + PDF |
 | | Laporan Keuangan | Total pendapatan + grafik bulanan + PDF |
@@ -126,6 +128,7 @@ stok    ←── produksi + penjualan (aggregate)
 | | Input Bahan Baku | Form input harian |
 | | Input Produksi | Form input harian |
 | | Input Penjualan | Form input harian + auto-hitung total |
+| | Input Pengeluaran | Form input harian (listrik, air, dll) |
 
 ---
 

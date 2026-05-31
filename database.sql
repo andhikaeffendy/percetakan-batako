@@ -87,7 +87,20 @@ CREATE TABLE gaji (
     FOREIGN KEY (pekerja_id) REFERENCES pekerja(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 7. stok
+-- 7. pengeluaran
+CREATE TABLE pengeluaran (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tanggal_pengeluaran DATE NOT NULL,
+    kategori ENUM('Bahan Baku','Listrik','Air','Transportasi','Perawatan','Lainnya') NOT NULL,
+    jumlah DECIMAL(12,0) NOT NULL,
+    keterangan TEXT,
+    operator_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 8. stok
 CREATE TABLE stok (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ukuran_batako ENUM('standar','besar') NOT NULL,

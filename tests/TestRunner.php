@@ -316,6 +316,43 @@ assertTest("getFlash clears flash", getFlash() === null);
 
 
 // ──────────────────────────────────────────────
+testHeader("17. Pengeluaran Table");
+
+$stmt = $db->query("SHOW TABLES LIKE 'pengeluaran'");
+assertTest("Pengeluaran table exists", $stmt->rowCount() > 0);
+
+$stmt = $db->query("SELECT COUNT(*) FROM pengeluaran");
+$pengeluaranCount = $stmt->fetchColumn();
+assertTest("Pengeluaran starts empty (0 records)", $pengeluaranCount == 0, "Has {$pengeluaranCount} records");
+
+// Test INSERT
+$stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori, jumlah, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
+$stmt->execute([date('Y-m-d'), 'Listrik', 500000, 'Test pengeluaran', 1]);
+$newId = $db->lastInsertId();
+assertTest("Insert pengeluaran works", $newId > 0);
+
+// Test SELECT
+$stmt = $db->prepare("SELECT * FROM pengeluaran WHERE id = ?");
+$stmt->execute([$newId]);
+$row = $stmt->fetch();
+assertTest("Select pengeluaran works", $row && $row['kategori'] === 'Listrik');
+assertTest("Pengeluaran keterangan field exists", isset($row['keterangan']));
+assertTest("Pengeluaran jumlah is correct", $row['jumlah'] == 500000);
+
+// Test UPDATE
+$stmt = $db->prepare("UPDATE pengeluaran SET jumlah = 600000, keterangan = 'Updated' WHERE id = ?");
+$stmt->execute([$newId]);
+$stmt = $db->prepare("SELECT jumlah, keterangan FROM pengeluaran WHERE id = ?");
+$stmt->execute([$newId]);
+$updated = $stmt->fetch();
+assertTest("Update pengeluaran works", $updated['jumlah'] == 600000 && $updated['keterangan'] === 'Updated');
+
+// Test DELETE (cleanup)
+$stmt = $db->prepare("DELETE FROM pengeluaran WHERE id = ?");
+$stmt->execute([$newId]);
+assertTest("Delete pengeluaran works", $db->query("SELECT COUNT(*) FROM pengeluaran")->fetchColumn() == 0);
+
+// ──────────────────────────────────────────────
 echo "\n══════════════════════════════════════════\n";
 echo "  Results: {$testsPassed}/{$testsTotal} passed";
 if ($testsFailed > 0) echo ", {$testsFailed} failed";

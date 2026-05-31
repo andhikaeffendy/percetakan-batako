@@ -14,7 +14,7 @@ $ukuran = $_GET['ukuran'] ?? '';
 $ukuranWhere = $ukuran ? 'AND ukuran_batako = ?' : '';
 $ukuranParam = $ukuran ? [$ukuran] : [];
 
-// Summary
+// Summary Penjualan
 $stmt = $db->prepare("SELECT 
     COALESCE(SUM(jumlah_terjual), 0) as total_terjual,
     COALESCE(SUM(total_penjualan), 0) as total_pendapatan,
@@ -23,13 +23,18 @@ $stmt = $db->prepare("SELECT
 $stmt->execute(array_merge([$periodeAwal, $periodeAkhir], $ukuranParam));
 $summary = $stmt->fetch();
 
-// Chart bulanan (setahun)
+// Pengeluaran
+$stmt = $db->prepare("SELECT COALESCE(SUM(jumlah), 0) as total_pengeluaran FROM pengeluaran WHERE tanggal_pengeluaran BETWEEN ? AND ?");
+$stmt->execute([$periodeAwal, $periodeAkhir]);
+$totalPengeluaran = (int)$stmt->fetchColumn();
+$labaBersih = (int)$summary['total_pendapatan'] - $totalPengeluaran;
+
+// Chart bulanan
 $labelsBulan = [];
 $pendapatanBulan = [];
 for ($m = 1; $m <= 12; $m++) {
     $bln = str_pad($m, 2, '0', STR_PAD_LEFT);
     $labelsBulan[] = date('M', strtotime("2025-{$bln}-01"));
-    
     $stmt = $db->prepare("SELECT COALESCE(SUM(total_penjualan), 0) FROM penjualan WHERE tanggal_penjualan BETWEEN ? AND ? $ukuranWhere");
     $stmt->execute(array_merge(["2025-{$bln}-01", "2025-{$bln}-31"], $ukuranParam));
     $pendapatanBulan[] = (int)$stmt->fetchColumn();
@@ -56,7 +61,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th { background: #1E293B; color: white; padding: 8px; text-align: left; }
         td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
-        tr:nth-child(even) { background: #f9f9f9; }
         .summary { margin: 15px 0; }
         .summary td { text-align: center; font-weight: bold; padding: 10px; border: 1px solid #ddd; }
     </style></head><body>';
@@ -64,9 +68,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     $html .= '<p>Percetakan Batako Maros — ' . formatTanggal($periodeAwal) . ' s/d ' . formatTanggal($periodeAkhir) . '</p>';
     
     $html .= '<table class="summary"><tr>';
-    $html .= '<td>Total Pendapatan: ' . formatRupiah($summary['total_pendapatan']) . '</td>';
-    $html .= '<td>Total Terjual: ' . number_format($summary['total_terjual']) . '</td>';
-    $html .= '<td>Total Transaksi: ' . number_format($summary['total_transaksi']) . '</td>';
+    $html .= '<td>Pendapatan: ' . formatRupiah($summary['total_pendapatan']) . '</td>';
+    $html .= '<td>Pengeluaran: ' . formatRupiah($totalPengeluaran) . '</td>';
+    $html .= '<td>Laba Bersih: ' . formatRupiah($labaBersih) . '</td>';
     $html .= '</tr></table>';
     
     $html .= '<table><thead><tr><th>Bulan</th><th>Pendapatan</th></tr></thead><tbody>';
@@ -118,25 +122,33 @@ include __DIR__ . '/../layouts/header.php';
 
 <!-- Summary -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon orange">💰</div>
             <div class="stat-label">Total Pendapatan</div>
             <div class="stat-value" style="font-size:18px;"><?= formatRupiah($summary['total_pendapatan']) ?></div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon blue">📦</div>
-            <div class="stat-label">Total Batako Terjual</div>
-            <div class="stat-value"><?= number_format($summary['total_terjual']) ?></div>
+            <div class="stat-icon red">💸</div>
+            <div class="stat-label">Total Pengeluaran</div>
+            <div class="stat-value" style="font-size:18px;"><?= formatRupiah($totalPengeluaran) ?></div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon green">🧾</div>
-            <div class="stat-label">Total Transaksi</div>
-            <div class="stat-value"><?= number_format($summary['total_transaksi']) ?></div>
+            <div class="stat-icon <?= $labaBersih >= 0 ? 'green' : 'red' ?>">📉</div>
+            <div class="stat-label">Laba Bersih</div>
+            <div class="stat-value" style="font-size:18px;color:<?= $labaBersih >= 0 ? 'var(--green)' : 'var(--red)' ?>;"><?= formatRupiah($labaBersih) ?></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon blue">📦</div>
+            <div class="stat-label">Total Terjual</div>
+            <div class="stat-value"><?= number_format($summary['total_terjual']) ?></div>
+            <div class="stat-sub"><?= number_format($summary['total_transaksi']) ?> transaksi</div>
         </div>
     </div>
 </div>
@@ -156,9 +168,7 @@ include __DIR__ . '/../layouts/header.php';
     <div class="card-body">
         <div class="table-responsive">
             <table class="table-custom">
-                <thead>
-                    <tr><th>No</th><th>Tanggal</th><th>Ukuran</th><th>Jumlah</th><th>Harga</th><th>Total</th><th>Pembeli</th></tr>
-                </thead>
+                <thead><tr><th>No</th><th>Tanggal</th><th>Ukuran</th><th>Jumlah</th><th>Harga</th><th>Total</th><th>Pembeli</th></tr></thead>
                 <tbody>
                     <?php foreach ($detail as $i => $d): ?>
                     <tr>
@@ -189,9 +199,7 @@ new Chart(document.getElementById('chartKeuangan'), {
             data: <?= json_encode($pendapatanBulan) ?>,
             borderColor: '#16A34A',
             backgroundColor: 'rgba(22,163,74,0.05)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 3,
+            fill: true, tension: 0.3, pointRadius: 3,
         }]
     },
     options: {

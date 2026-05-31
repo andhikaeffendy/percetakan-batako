@@ -42,6 +42,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <span class="menu-icon">💵</span> Perhitungan Gaji
             </a>
         </li>
+        <li>
+            <a href="/pemilik/pengeluaran.php" class="<?= $currentPage === 'pengeluaran.php' ? 'active' : '' ?>">
+                <span class="menu-icon">💸</span> Data Pengeluaran
+            </a>
+        </li>
         <li class="sidebar-heading">Laporan</li>
         <li>
             <a href="/pemilik/laporan_produksi.php" class="<?= $currentPage === 'laporan_produksi.php' ? 'active' : '' ?>">

@@ -32,6 +32,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <span class="menu-icon">💰</span> Input Penjualan
             </a>
         </li>
+        <li>
+            <a href="/operator/input_pengeluaran.php" class="<?= $currentPage === 'input_pengeluaran.php' ? 'active' : '' ?>">
+                <span class="menu-icon">💸</span> Input Pengeluaran
+            </a>
+        </li>
         <li class="logout">
             <a href="/logout.php">
                 <span class="menu-icon">🚪</span> Logout

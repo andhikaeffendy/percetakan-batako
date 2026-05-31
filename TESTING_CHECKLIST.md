@@ -43,4 +43,7 @@
 | 33 | Export | PDF Laporan Produksi | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
 | 34 | Export | PDF Laporan Keuangan | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
 | 35 | Export | PDF Laporan Gaji | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
-| 36 | Test | Automated Test Suite | Jalankan `php tests/TestRunner.php` | 65/65 tests passed | ✅ |
+| 36 | Test | Automated Test Suite | Jalankan `php tests/TestRunner.php` | 73/73 tests passed | ✅ |
+| 37 | Pengeluaran | CRUD Pengeluaran | Tambah/Edit/Hapus pengeluaran | Data tersimpan + total terupdate | ✅ |
+| 38 | Pengeluaran | Input Operator | Login operator → Input Pengeluaran | Data tersimpan | ✅ |
+| 39 | Laporan | Laba Bersih | Buka laporan keuangan | Tampil Pendapatan − Pengeluaran = Laba | ✅ |
