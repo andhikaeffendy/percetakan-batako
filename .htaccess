@@ -25,3 +25,17 @@ RewriteRule ^(.*)$ index.php [QSA,L]
 
 # Disable directory listing
 Options -Indexes
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# PHP settings (untuk InfinityFree)
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_value error_reporting E_ALL & ~E_DEPRECATED & ~E_STRICT
+</IfModule>
