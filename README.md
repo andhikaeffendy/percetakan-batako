@@ -597,9 +597,29 @@ php seeder.php
 
 ---
 
-### Langkah-langkah Deploy ke InfinityFree
+### Langkah-langkah Deploy ke InfinityFree — Step by Step
 
-#### Step 1: Buat Akun InfinityFree
+---
+
+#### Sebelum Mulai — Cek Informasi Akun Anda
+
+Setelah login ke panel InfinityFree, Anda akan melihat halaman utama akun:
+
+```
+┌─────────────────────────────────────────────┐
+│  Account: epiz_XXXXX                        │  ← INI ACCOUNT ID ANDA
+│  Main Domain: epiz_XXXXX.infinityfreeapp.com │  ← INI URL WEBSITE ANDA
+│  PHP Version: 8.0                           │
+└─────────────────────────────────────────────┘
+```
+
+> 📝 **Catat 2 hal ini di notepad/HP:**
+> 1. **Account ID**: `epiz_XXXXX` (angka setelah `epiz_`)
+> 2. **Domain URL**: `epiz_XXXXX.infinityfreeapp.com`
+
+---
+
+#### Step 1: Buat Database MySQL
 
 1. Buka [https://www.infinityfree.com](https://www.infinityfree.com)
 2. Klik **Get Free Hosting**
@@ -607,176 +627,308 @@ php seeder.php
 4. Verifikasi email (cek inbox/spam)
 5. Login ke panel InfinityFree
 
-#### Step 2: Buat Database MySQL
 
-1. Di panel InfinityFree, klik **Accounts** → pilih akun Anda
-2. Klik **MySQL Databases** di sidebar kiri
-3. Masukkan:
-   - **Database Name**: `batako_maros` (atau nama lain)
-   - **Username**: `batako_user` (atau nama lain)
-   - **Password**: buat password kuat
-4. Klik **Create Database**
-5. **Catat info berikut** (akan dipakai di Step 4 & 5):
-   ```
-   Database Name: epiz_XXXXX_batako_maros
-   Username: epiz_XXXXX_batako_user
-   Password: [password yang dibuat]
-   Server Host: sqlXXX.infinityfree.com  (atau localhost)
-   ```
+### Langkah-langkah Deploy ke InfinityFree — Step by Step
 
-#### Step 3: Upload File
+---
 
-##### Opsi A: Via File Manager (Mudah)
+#### Sebelum Mulai — Cek Informasi Akun Anda
 
-1. Di panel InfinityFree, klik **File Manager**
-2. Buka folder `htdocs`
-3. Upload semua file project **KECUALI**:
-   - Folder `vendor/` (akan diinstall ulang)
-   - File `.env` (jangan upload, akan dibuat manual)
-4. Atau upload file `zip` project → klik kanan → **Extract**
+Setelah login ke panel InfinityFree, Anda akan melihat halaman utama akun:
 
-##### Opsi B: Via FTP (Cepat untuk file banyak)
+```
+┌─────────────────────────────────────────────┐
+│  Account: epiz_XXXXX                        │  ← INI ACCOUNT ID ANDA
+│  Main Domain: epiz_XXXXX.infinityfreeapp.com │  ← INI URL WEBSITE ANDA
+│  PHP Version: 8.0                           │
+└─────────────────────────────────────────────┘
+```
 
-1. Download **FileZilla** (gratis) dari [https://filezilla-project.org](https://filezilla-project.org)
-2. Di panel InfinityFree, buka **FTP Accounts**
-3. Buat FTP account (atau gunakan default)
-4. Konek via FileZilla:
+> 📝 **Catat 2 hal ini di notepad/HP:**
+> 1. **Account ID**: `epiz_XXXXX` (angka setelah `epiz_`)
+> 2. **Domain URL**: `epiz_XXXXX.infinityfreeapp.com`
+
+---
+
+#### Step 1: Buat Database MySQL — PANDUAN DETAIL
+
+Langkah ini **paling penting.** Buka panel InfinityFree dan ikuti satu per satu:
+
+**①** Login ke panel → buka **Accounts** → klik nama akun Anda
+
+**②** Cari dan klik **"MySQL Databases"** di sidebar kiri:
+
+```
+┌─────────────────────────────────────┐
+│  📊 MySQL Databases  ← KLIK INI    │
+│  📁 File Manager                    │
+│  🌐 FTP Accounts                    │
+└─────────────────────────────────────┘
+```
+
+**③** Akan muncul form **"Create MySQL Database"**. Isi:
+
+```
+┌──────────────────────────────────────────────────┐
+│  CREATE MYSQL DATABASE                           │
+│                                                  │
+│  Database Name:  [ batako_maros        ]         │
+│  Username:       [ batako_user         ]         │
+│  Password:       [ •••••••••••         ]         │
+│  (ulangi pwd):   [ •••••••••••         ]         │
+│                                                  │
+│  [ ✚ Create Database ]                          │
+└──────────────────────────────────────────────────┘
+```
+
+| Field | Yang Diisi | Contoh |
+|-------|-----------|--------|
+| **Database Name** | `batako_maros` | Boleh nama lain, asal ingat |
+| **Username** | `batako_user` | Boleh nama lain |
+| **Password** | Buat password kuat | `BatakoMaros2025!` |
+| **Repeat Password** | Ketik ulang | Sama seperti di atas |
+
+**④** Klik **"Create Database"**
+
+**⑤** Jika berhasil, akan muncul tabel:
+
+```
+┌──────────────────┬──────────────────────────┬──────────────┐
+│ Database         │ Username                 │ Server Host  │
+├──────────────────┼──────────────────────────┼──────────────┤
+│ epiz_XXXXX_      │ epiz_XXXXX_batako_user   │ sqlXXX       │
+│ batako_maros     │                          │ .infinity    │
+│                  │                          │ free.com     │
+└──────────────────┴──────────────────────────┴──────────────┘
+```
+
+⚠️ **Perhatikan**: InfinityFree OTOMATIS menambahkan prefix `epiz_XXXXX_`!
+
+**⑥ CATAT INFORMASI INI — SANGAT PENTING!**
+
+```text
+╔══════════════════════════════════════════════════╗
+║          INFORMASI DATABASE ANDA                 ║
+╠══════════════════════════════════════════════════╣
+║                                                  ║
+║  🔹 DB_HOST (Server Host):                      ║
+║     sqlXXX.infinityfree.com                     ║
+║     (GANTI XXX dengan angka dari tabel,         ║
+║      contoh: sql303)                            ║
+║                                                  ║
+║  🔹 DB_NAME (Nama Database):                    ║
+║     epiz_XXXXX_batako_maros                     ║
+║                                                  ║
+║  🔹 DB_USER (Username):                         ║
+║     epiz_XXXXX_batako_user                      ║
+║                                                  ║
+║  🔹 DB_PASS (Password):                         ║
+║     [password yang kamu buat tadi]              ║
+║                                                  ║
+╚══════════════════════════════════════════════════╝
+```
+
+**Dimana letak nilai-nilai ini?**
+
+| Variabel | Letak | Contoh |
+|----------|-------|--------|
+| `epiz_XXXXX` | Ada di pojok kanan atas panel | `epiz_12345` |
+| `sqlXXX` | Ada di kolom **Server Host** tabel MySQL | `sql303` |
+| `batako_maros` | Nama database yang kamu isi di form | `batako_maros` |
+| `batako_user` | Username yang kamu isi di form | `batako_user` |
+| Password | Password yang kamu buat | `BatakoMaros2025!` |
+
+**Contoh konkret:**
+- Account ID: `epiz_12345`
+- Server Host: `sql303`
+- Nama Database: `batako_maros`
+- Username: `batako_user`
+
+Maka:
+```text
+DB_HOST = sql303.infinityfree.com
+DB_NAME = epiz_12345_batako_maros
+DB_USER = epiz_12345_batako_user
+DB_PASS = BatakoMaros2025!
+```
+
+---
+
+#### Step 2: Siapkan File Project di Laptop
+
+Buka terminal/CMD di folder project:
+
+```bash
+# 1. Masuk ke folder project
+cd /path/to/umkm-percetakan-batako
+
+# 2. Install composer untuk production (lebih ringan, tanpa dev)
+rm -rf vendor/
+composer install --no-dev --optimize-autoloader
+
+# 3. Hapus file yang tidak perlu diupload
+rm -f .env
+rm -rf assets/design_ref/
+rm -f analisa.jpeg
+```
+
+**File WAJIB diupload:** Semua file di folder project (37 file) + folder `vendor/` (hasil composer)
+
+**File JANGAN diupload:** `.env` (buat baru di server), file desain (sudah dihapus)
+
+---
+
+#### Step 3: Upload File ke Server
+
+Pilih salah satu cara:
+
+##### 🅰️ Cara Mudah — File Manager (dari browser)
+
+1. Di panel InfinityFree, klik **"File Manager"**
+2. Masuk ke folder **`htdocs`**
+3. Klik tombol **"Upload"** di toolbar
+4. Upload file-file project (bisa zip semua file → upload zip → klik kanan → **Extract**)
+
+##### 🅱️ Cara Cepat — FTP (FileZilla)
+
+1. Download & install **FileZilla** dari https://filezilla-project.org
+2. Di panel InfinityFree, buka **"FTP Accounts"** → **"Create FTP Account"** (atau gunakan default)
+3. Dapatkan info koneksi:
    ```
    Host: ftp.infinityfree.com
    Username: epiz_XXXXX
    Password: [password FTP]
    Port: 21
    ```
-5. Upload semua file project ke folder `htdocs/`
-6. **Jangan upload folder `vendor/`**
+4. Buka FileZilla → isi Host, Username, Password, Port 21 → klik **Quickconnect**
+5. Panel kanan = folder server. Masuk ke **`htdocs`**
+6. Panel kiri = folder laptop. Pilih semua file project
+7. **Drag & drop** dari kiri ke kanan
+8. Tunggu upload selesai
 
-#### Step 4: Konfigurasi .env
+---
 
-Setelah file terupload, buat file `.env` di folder `htdocs/` melalui **File Manager**:
+#### Step 4: Buat File .env di Server
 
-1. Klik **New File** → namai: `.env`
-2. Isi dengan konfigurasi database production:
+File `.env` buat MANUAL di server (jangan upload dari laptop):
+
+1. Di **File Manager**, klik kanan → **"New File"**
+2. Nama file: `.env`
+3. Klik file `.env` → **"Edit"**
+4. **Isi dengan:**
 
 ```env
 DB_HOST=sqlXXX.infinityfree.com
 DB_NAME=epiz_XXXXX_batako_maros
 DB_USER=epiz_XXXXX_batako_user
-DB_PASS=password_yang_dibuat
+DB_PASS=password_yang_tadi_dibuat
 
 APP_URL=http://epiz_XXXXX.infinityfreeapp.com
 APP_NAME=Percetakan Batako Maros
 APP_ENV=production
 ```
 
-> **Ganti**:
-> - `sqlXXX` dengan server host dari Step 2
-> - `epiz_XXXXX` dengan account ID Anda
-> - `password_yang_dibuat` dengan password MySQL
+> ⚠️ **WAJIB GANTI:**
+> - `sqlXXX` → Server Host dari tabel MySQL (contoh: `sql303`)
+> - `epiz_XXXXX` → Account ID kamu
+> - `password_yang_tadi_dibuat` → Password MySQL yang kamu buat
 
-#### Step 5: Import Database
+**Contoh hasil akhir yang benar:**
+```env
+DB_HOST=sql303.infinityfree.com
+DB_NAME=epiz_12345_batako_maros
+DB_USER=epiz_12345_batako_user
+DB_PASS=BatakoMaros2025!
 
-Ada 2 cara:
-
-##### Cara A: Via phpMyAdmin (Mudah)
-
-1. Di panel InfinityFree, klik **phpMyAdmin**
-2. Login dengan username & password database (dari Step 2)
-3. Klik database Anda di sidebar kiri
-4. Klik tab **SQL**
-5. Klik **Choose File** → pilih file `database.sql` dari project
-6. Klik **Go**
-
-##### Cara B: Via Command (Alternatif)
-
-Buka **MySQL Databases** di panel → klik **Run SQL Query** → paste isi `database.sql` → Execute.
-
-#### Step 6: Install Composer Dependencies
-
-InfinityFree **tidak punya akses command line (SSH)** untuk menjalankan `composer install`.
-
-Solusi: **Install composer di laptop Anda, lalu upload folder `vendor/` hasil install-an.**
-
-```bash
-# Di laptop/komputer Anda:
-cd /path/to/project
-
-# Hapus vendor lama (jika ada)
-rm -rf vendor/
-
-# Install ulang (production mode — lebih ringan)
-composer install --no-dev --optimize-autoloader
-
-# Upload folder vendor/ yang baru ke server via FTP/File Manager
+APP_URL=http://epiz_12345.infinityfreeapp.com
+APP_NAME=Percetakan Batako Maros
+APP_ENV=production
 ```
 
-Upload folder `vendor/` ke folder `htdocs/` di server.
-
-#### Step 7: Seed Data Awal
-
-Karena tidak bisa akses SSH, seed data bisa dilakukan melalui **phpMyAdmin**:
-
-1. Buka **phpMyAdmin** dari panel InfinityFree
-2. Login dengan kredensial database
-3. Klik database Anda
-4. Buka tab **SQL**
-5. Buka file `seeder.php` di laptop Anda
-6. **Jalankan query SQL berikut** (sudah ada di `database.sql` — sudah terimport):
-
-   Pastikan tabel sudah terisi dengan menjalankan query:
-
-   ```sql
-   -- Cek isi tabel users
-   SELECT * FROM users;
-   ```
-
-   Jika masih kosong, jalankan query INSERT dari file `database.sql` bagian SEED DATA:
-
-   ```sql
-   INSERT INTO pekerja (nama_pekerja, tarif_per_sak, status) VALUES
-   ('Ahmad Fauzi', 65000, 'aktif'),
-   ('Budi Santoso', 65000, 'aktif'),
-   ('Herman', 70000, 'aktif'),
-   ('Rudi Hartono', 65000, 'aktif'),
-   ('Slamet Riyadi', 65000, 'nonaktif');
-
-   INSERT INTO stok (ukuran_batako, total_produksi, total_penjualan, stok_tersedia) VALUES
-   ('standar', 0, 0, 0),
-   ('besar', 0, 0, 0);
-   ```
-
-   **Untuk user (password terhash):**
-   ```sql
-   INSERT INTO users (name, username, email, password, role) VALUES
-   ('Pemilik Batako', 'pemilik', 'pemilik@batakomaros.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'pemilik'),
-   ('Operator 1', 'operator', 'operator@batakomaros.com', '$2y$10$OQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi92IXUNpkj', 'operator');
-   ```
-
-   > ⚠️ Hash bcrypt di atas adalah **placeholder** — untuk production,
-   > jalankan `php -r "echo password_hash('admin123', PASSWORD_DEFAULT);"`
-   > di laptop, lalu ganti hash-nya.
-
-#### Step 8: Akses Website
-
-1. Buka browser → `http://epiz_XXXXX.infinityfreeapp.com`
-2. Login dengan:
-   - **Pemilik**: username `pemilik` / password `admin123`
-   - **Operator**: username `operator` / password `operator123`
-
-#### Step 9: Troubleshooting
-
-| Masalah | Solusi |
-|---------|--------|
-| **404 Not Found** | Pastikan `.htaccess` terupload. Cek apakah `mod_rewrite` aktif (InfinityFree sudah aktif default) |
-| **Koneksi database gagal** | Cek `DB_HOST`, `DB_USER`, `DB_PASS` di `.env`. Pastikan server host benar (bukan `localhost`) |
-| **Blank page** | Cek error: tambahkan `ini_set('display_errors', 1); error_reporting(E_ALL);` di `index.php` |
-| **CSS/JS tidak muncul** | Pastikan folder `assets/` terupload. Cek `APP_URL` di `.env` |
-| **Login gagal** | Password hash mungkin berbeda. Gunakan PHP seed via phpMyAdmin dengan hash yg benar |
-| **Composer autoload error** | Upload ulang folder `vendor/` |
-| **Database connection timeout** | InfinityFree terkadang lambat. Coba refresh. Cek server host di panel |
+5. Klik **"Save"**
 
 ---
 
-### Alternatif Hosting Berbayar (Jika Ingin Lebih Stabil)
+#### Step 5: Import Database + Seed Data
+
+1. Di panel InfinityFree, klik **"phpMyAdmin"**
+2. Login dengan **DB_USER** dan **DB_PASS** dari Step 1
+   ```
+   Username: epiz_XXXXX_batako_user
+   Password: [password]
+   ```
+3. Setelah masuk, klik nama database di sidebar kiri (`epiz_XXXXX_batako_maros`)
+4. Klik tab **"SQL"** di toolbar atas
+5. Klik **"Choose File"** → pilih file **`database.sql`** dari folder project
+6. Klik **"Go"** — tunggu query selesai
+7. **Ulangi** langkah 4-6 untuk file **`seed_production.sql`**
+8. ✅ Selesai! 7 tabel sudah terbuat + data awal sudah terisi
+
+---
+
+#### Step 6: Upload Folder vendor/
+
+Folder `vendor/` sudah ada di laptop dari Step 2. Upload ke server:
+
+**Via FileZilla:**
+- Panel kiri (laptop) → cari folder `vendor/` → klik kanan → **Upload**
+- Atau drag & drop folder `vendor/` dari kiri ke kanan (ke folder `htdocs`)
+
+**Via File Manager:**
+- Zip `vendor/` di laptop jadi `vendor.zip`
+- Upload `vendor.zip` → klik kanan → **"Extract"**
+- Hapus `vendor.zip`
+
+---
+
+#### Step 7: Verifikasi Website
+
+1. Buka browser → ketik:
+   ```
+   http://epiz_XXXXX.infinityfreeapp.com
+   ```
+   (Ganti `epiz_XXXXX` dengan Account ID kamu)
+
+2. Jika berhasil → **halaman login muncul!** 🎉
+
+3. Login:
+
+| Role | Username | Password |
+|------|----------|----------|
+| **Pemilik** | `pemilik` | `admin123` |
+| **Operator** | `operator` | `operator123` |
+
+4. Cek fitur:
+   - Dashboard Pemilik (grafik + KPI cards)
+   - Beranda Operator (3 KPI cards)
+   - Tambah data Bahan Baku / Produksi / Penjualan
+   - Export PDF & Excel
+
+---
+
+#### Troubleshooting
+
+| Masalah | Kemungkinan Penyebab | Solusi |
+|---------|---------------------|--------|
+| **❌ 500 Internal Server Error** | File rusak / .htaccess error | Cek **Error Log** di panel InfinityFree |
+| **❌ Blank page putih** | Ada PHP error | Edit `index.php` → tambah baris 2: `ini_set('display_errors', 1);` |
+| **❌ "Koneksi database gagal"** | DB_HOST/DB_USER/DB_PASS salah | Cek file `.env` — pastikan cocok dengan data di panel MySQL |
+| **❌ Login gagal** | Password hash salah | Import ulang `seed_production.sql` via phpMyAdmin |
+| **❌ CSS/JS berantakan** | APP_URL salah | Cek `APP_URL` di `.env` |
+| **❌ 404 halaman tidak ditemukan** | File belum terupload | Cek File Manager → folder `htdocs/` |
+| **❌ Class not found** | vendor/ belum terupload | Upload folder `vendor/` |
+| **❌ PDF export error** | Versi PHP | Cek PHP version di panel (min 8.0) |
+
+---
+
+#### Butuh Bantuan?
+
+Jika masih error setelah semua langkah:
+1. Cek **Error Log** di panel InfinityFree
+2. Screenshot error-nya
+3. Kirim ke sini, saya bantu debug 😊
+
+---### Alternatif Hosting Berbayar (Jika Ingin Lebih Stabil)
 
 | Platform | Harga | PHP | MySQL | SSH |
 |----------|-------|-----|-------|-----|
