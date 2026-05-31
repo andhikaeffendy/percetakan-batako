@@ -24,6 +24,14 @@ Website operasional untuk **UMKM Percetakan Batako Maros, Ambon, Maluku** — me
 - [Keamanan](#-keamanan)
 - [Desain UI](#-desain-ui)
 - [Testing Checklist](#-testing-checklist)
+- [Deploy Production (Gratis)](#-deploy-production-gratis)
+  - [Pilih Hosting](#pilih-hosting)
+  - [Buat Akun InfinityFree](#step-1-buat-akun-infinityfree)
+  - [Buat Database MySQL](#step-2-buat-database-mysql)
+  - [Upload File](#step-3-upload-file)
+  - [Konfigurasi .env](#step-4-konfigurasi-env)
+  - [Import Database](#step-5-import-database)
+  - [Akses Website](#step-6-akses-website)
 - [Lisensi](#-lisensi)
 
 ---
@@ -568,15 +576,219 @@ Jika ingin mengulang dari awal:
 php seeder.php
 ```
 
-### Deploy ke Server Production
+---
 
-1. Upload semua file ke server (kecuali `vendor/`)
-2. Jalankan `composer install --no-dev` di server
-3. Copy `.env.example` → `.env` dan sesuaikan dengan database production
-4. Jalankan `database.sql` untuk membuat tabel
-5. Jalankan `php seeder.php` untuk seed data awal
-6. Pastikan `.htaccess` rules aktif
-7. Set permission folder `vendor/` dan `assets/` readable
+## 🚀 Deploy Production (Gratis)
+
+### Pilih Hosting
+
+**Vercel / Netlify / Railway TIDAK bisa** karena project ini menggunakan **PHP + MySQL**, bukan static site.
+
+| Platform | PHP | MySQL | Gratis? | Cocok? |
+|----------|-----|-------|---------|--------|
+| **InfinityFree** | ✅ Ya | ✅ Ya (2 DB) | ✅ Selamanya | ✅ **Paling cocok** |
+| AwardSpace | ✅ Ya | ✅ Ya (1 DB) | ✅ 1 GB | ⚠️ Terbatas |
+| 000WebHost | ✅ Ya | ✅ Ya | ✅ Tapi ada iklan | ⚠️ Iklan paksa |
+| Vercel | ❌ Tidak | ❌ Tidak | ✅ | ❌ |
+| Netlify | ❌ Tidak | ❌ Tidak | ✅ | ❌ |
+
+> **Rekomendasi: InfinityFree** — gratis selamanya, 5GB disk, bandwidth tak terbatas,
+> support PHP 8.0+, MySQL, .htaccess, dan tanpa kartu kredit.
+
+---
+
+### Langkah-langkah Deploy ke InfinityFree
+
+#### Step 1: Buat Akun InfinityFree
+
+1. Buka [https://www.infinityfree.com](https://www.infinityfree.com)
+2. Klik **Get Free Hosting**
+3. Isi form pendaftaran (email, password)
+4. Verifikasi email (cek inbox/spam)
+5. Login ke panel InfinityFree
+
+#### Step 2: Buat Database MySQL
+
+1. Di panel InfinityFree, klik **Accounts** → pilih akun Anda
+2. Klik **MySQL Databases** di sidebar kiri
+3. Masukkan:
+   - **Database Name**: `batako_maros` (atau nama lain)
+   - **Username**: `batako_user` (atau nama lain)
+   - **Password**: buat password kuat
+4. Klik **Create Database**
+5. **Catat info berikut** (akan dipakai di Step 4 & 5):
+   ```
+   Database Name: epiz_XXXXX_batako_maros
+   Username: epiz_XXXXX_batako_user
+   Password: [password yang dibuat]
+   Server Host: sqlXXX.infinityfree.com  (atau localhost)
+   ```
+
+#### Step 3: Upload File
+
+##### Opsi A: Via File Manager (Mudah)
+
+1. Di panel InfinityFree, klik **File Manager**
+2. Buka folder `htdocs`
+3. Upload semua file project **KECUALI**:
+   - Folder `vendor/` (akan diinstall ulang)
+   - File `.env` (jangan upload, akan dibuat manual)
+4. Atau upload file `zip` project → klik kanan → **Extract**
+
+##### Opsi B: Via FTP (Cepat untuk file banyak)
+
+1. Download **FileZilla** (gratis) dari [https://filezilla-project.org](https://filezilla-project.org)
+2. Di panel InfinityFree, buka **FTP Accounts**
+3. Buat FTP account (atau gunakan default)
+4. Konek via FileZilla:
+   ```
+   Host: ftp.infinityfree.com
+   Username: epiz_XXXXX
+   Password: [password FTP]
+   Port: 21
+   ```
+5. Upload semua file project ke folder `htdocs/`
+6. **Jangan upload folder `vendor/`**
+
+#### Step 4: Konfigurasi .env
+
+Setelah file terupload, buat file `.env` di folder `htdocs/` melalui **File Manager**:
+
+1. Klik **New File** → namai: `.env`
+2. Isi dengan konfigurasi database production:
+
+```env
+DB_HOST=sqlXXX.infinityfree.com
+DB_NAME=epiz_XXXXX_batako_maros
+DB_USER=epiz_XXXXX_batako_user
+DB_PASS=password_yang_dibuat
+
+APP_URL=http://epiz_XXXXX.infinityfreeapp.com
+APP_NAME=Percetakan Batako Maros
+APP_ENV=production
+```
+
+> **Ganti**:
+> - `sqlXXX` dengan server host dari Step 2
+> - `epiz_XXXXX` dengan account ID Anda
+> - `password_yang_dibuat` dengan password MySQL
+
+#### Step 5: Import Database
+
+Ada 2 cara:
+
+##### Cara A: Via phpMyAdmin (Mudah)
+
+1. Di panel InfinityFree, klik **phpMyAdmin**
+2. Login dengan username & password database (dari Step 2)
+3. Klik database Anda di sidebar kiri
+4. Klik tab **SQL**
+5. Klik **Choose File** → pilih file `database.sql` dari project
+6. Klik **Go**
+
+##### Cara B: Via Command (Alternatif)
+
+Buka **MySQL Databases** di panel → klik **Run SQL Query** → paste isi `database.sql` → Execute.
+
+#### Step 6: Install Composer Dependencies
+
+InfinityFree **tidak punya akses command line (SSH)** untuk menjalankan `composer install`.
+
+Solusi: **Install composer di laptop Anda, lalu upload folder `vendor/` hasil install-an.**
+
+```bash
+# Di laptop/komputer Anda:
+cd /path/to/project
+
+# Hapus vendor lama (jika ada)
+rm -rf vendor/
+
+# Install ulang (production mode — lebih ringan)
+composer install --no-dev --optimize-autoloader
+
+# Upload folder vendor/ yang baru ke server via FTP/File Manager
+```
+
+Upload folder `vendor/` ke folder `htdocs/` di server.
+
+#### Step 7: Seed Data Awal
+
+Karena tidak bisa akses SSH, seed data bisa dilakukan melalui **phpMyAdmin**:
+
+1. Buka **phpMyAdmin** dari panel InfinityFree
+2. Login dengan kredensial database
+3. Klik database Anda
+4. Buka tab **SQL**
+5. Buka file `seeder.php` di laptop Anda
+6. **Jalankan query SQL berikut** (sudah ada di `database.sql` — sudah terimport):
+
+   Pastikan tabel sudah terisi dengan menjalankan query:
+
+   ```sql
+   -- Cek isi tabel users
+   SELECT * FROM users;
+   ```
+
+   Jika masih kosong, jalankan query INSERT dari file `database.sql` bagian SEED DATA:
+
+   ```sql
+   INSERT INTO pekerja (nama_pekerja, tarif_per_sak, status) VALUES
+   ('Ahmad Fauzi', 65000, 'aktif'),
+   ('Budi Santoso', 65000, 'aktif'),
+   ('Herman', 70000, 'aktif'),
+   ('Rudi Hartono', 65000, 'aktif'),
+   ('Slamet Riyadi', 65000, 'nonaktif');
+
+   INSERT INTO stok (ukuran_batako, total_produksi, total_penjualan, stok_tersedia) VALUES
+   ('standar', 0, 0, 0),
+   ('besar', 0, 0, 0);
+   ```
+
+   **Untuk user (password terhash):**
+   ```sql
+   INSERT INTO users (name, username, email, password, role) VALUES
+   ('Pemilik Batako', 'pemilik', 'pemilik@batakomaros.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'pemilik'),
+   ('Operator 1', 'operator', 'operator@batakomaros.com', '$2y$10$OQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi92IXUNpkj', 'operator');
+   ```
+
+   > ⚠️ Hash bcrypt di atas adalah **placeholder** — untuk production,
+   > jalankan `php -r "echo password_hash('admin123', PASSWORD_DEFAULT);"`
+   > di laptop, lalu ganti hash-nya.
+
+#### Step 8: Akses Website
+
+1. Buka browser → `http://epiz_XXXXX.infinityfreeapp.com`
+2. Login dengan:
+   - **Pemilik**: username `pemilik` / password `admin123`
+   - **Operator**: username `operator` / password `operator123`
+
+#### Step 9: Troubleshooting
+
+| Masalah | Solusi |
+|---------|--------|
+| **404 Not Found** | Pastikan `.htaccess` terupload. Cek apakah `mod_rewrite` aktif (InfinityFree sudah aktif default) |
+| **Koneksi database gagal** | Cek `DB_HOST`, `DB_USER`, `DB_PASS` di `.env`. Pastikan server host benar (bukan `localhost`) |
+| **Blank page** | Cek error: tambahkan `ini_set('display_errors', 1); error_reporting(E_ALL);` di `index.php` |
+| **CSS/JS tidak muncul** | Pastikan folder `assets/` terupload. Cek `APP_URL` di `.env` |
+| **Login gagal** | Password hash mungkin berbeda. Gunakan PHP seed via phpMyAdmin dengan hash yg benar |
+| **Composer autoload error** | Upload ulang folder `vendor/` |
+| **Database connection timeout** | InfinityFree terkadang lambat. Coba refresh. Cek server host di panel |
+
+---
+
+### Alternatif Hosting Berbayar (Jika Ingin Lebih Stabil)
+
+| Platform | Harga | PHP | MySQL | SSH |
+|----------|-------|-----|-------|-----|
+| **Hostinger** | ~Rp15.000/bln | ✅ | ✅ | ✅ Ada |
+| **Niagahoster** | ~Rp20.000/bln | ✅ | ✅ | ✅ Ada |
+| **Domainesia** | ~Rp18.000/bln | ✅ | ✅ | ✅ Ada |
+
+Dengan hosting berbayar, Anda bisa:
+- SSH ke server → jalankan `composer install` langsung
+- Jalankan `php seeder.php` langsung
+- Domain sendiri (bukan subdomain)
+- Lebih cepat & stabil
 
 ---
 
