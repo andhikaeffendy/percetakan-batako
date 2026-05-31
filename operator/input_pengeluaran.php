@@ -9,20 +9,21 @@ $pageTitle = 'Input Pengeluaran';
 $today = date('Y-m-d');
 $success = false;
 
+$kategoriList = $db->query("SELECT id, nama_kategori FROM kategori_pengeluaran WHERE status = 'aktif' ORDER BY nama_kategori")->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tanggal = $_POST['tanggal_pengeluaran'];
-    $kategori = $_POST['kategori'];
-    $jumlah = $_POST['jumlah'];
+    $kategoriId = $_POST['kategori_pengeluaran_id'];
+    $nominal = $_POST['nominal'];
     $keterangan = $_POST['keterangan'] ?? '';
     $operatorId = $_SESSION['user_id'];
 
-    $stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori, jumlah, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$tanggal, $kategori, $jumlah, $keterangan, $operatorId]);
+    $stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori_pengeluaran_id, nominal, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$tanggal, $kategoriId, $nominal, $keterangan, $operatorId]);
     $success = true;
 }
 
-// Ringkasan hari ini
-$stmt = $db->prepare("SELECT COALESCE(SUM(jumlah), 0) as total, COUNT(*) as transaksi FROM pengeluaran WHERE tanggal_pengeluaran = ?");
+$stmt = $db->prepare("SELECT COALESCE(SUM(p.nominal), 0) as total, COUNT(*) as transaksi FROM pengeluaran p WHERE p.tanggal_pengeluaran = ?");
 $stmt->execute([$today]);
 $ringkasan = $stmt->fetch();
 
@@ -48,18 +49,18 @@ include __DIR__ . '/../layouts/header.php';
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Kategori</label>
-                                <select name="kategori" class="form-select" required>
+                                <select name="kategori_pengeluaran_id" class="form-select" required>
                                     <option value="">Pilih kategori</option>
-                                    <?php foreach (['Bahan Baku','Listrik','Air','Transportasi','Perawatan','Lainnya'] as $k): ?>
-                                    <option value="<?= $k ?>"><?= $k ?></option>
+                                    <?php foreach ($kategoriList as $k): ?>
+                                    <option value="<?= $k['id'] ?>"><?= e($k['nama_kategori']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label">Jumlah (Rp)</label>
-                                <input type="number" name="jumlah" class="form-control" min="0" placeholder="Contoh: 500000" required>
+                                <label class="form-label">Nominal (Rp)</label>
+                                <input type="number" name="nominal" class="form-control" min="0" placeholder="Contoh: 500000" required>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -90,19 +91,6 @@ include __DIR__ . '/../layouts/header.php';
                     <small style="color:var(--text-muted);">Jumlah Transaksi</small>
                     <div style="font-size:24px;font-weight:700;"><?= number_format($ringkasan['transaksi']) ?></div>
                 </div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><h5>📋 Informasi</h5></div>
-            <div class="card-body">
-                <p style="font-size:13px;color:var(--text-muted);">Catat semua pengeluaran operasional di sini.</p>
-                <ul style="font-size:13px;color:var(--text-muted);padding-left:18px;">
-                    <li>Bahan Baku — pembelian semen, pasir</li>
-                    <li>Listrik — biaya listrik bulanan</li>
-                    <li>Transportasi — ongkos kirim</li>
-                    <li>Perawatan — perbaikan mesin</li>
-                    <li>Lainnya — biaya tak terduga</li>
-                </ul>
             </div>
         </div>
     </div>

@@ -8,6 +8,9 @@ $db = getDB();
 $pageTitle = 'Data Pengeluaran';
 $today = date('Y-m-d');
 
+// Get kategori list
+$kategoriList = $db->query("SELECT id, nama_kategori FROM kategori_pengeluaran WHERE status = 'aktif' ORDER BY nama_kategori")->fetchAll();
+
 // Handle Delete
 if (isset($_GET['delete'])) {
     $stmt = $db->prepare("DELETE FROM pengeluaran WHERE id = ?");
@@ -19,18 +22,18 @@ if (isset($_GET['delete'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = $_POST['id'] ?? null;
     $tanggal = $_POST['tanggal_pengeluaran'];
-    $kategori = $_POST['kategori'];
-    $jumlah = $_POST['jumlah'];
+    $kategoriId = $_POST['kategori_pengeluaran_id'];
+    $nominal = $_POST['nominal'];
     $keterangan = $_POST['keterangan'] ?? '';
     $operatorId = $_SESSION['user_id'];
 
     if ($id) {
-        $stmt = $db->prepare("UPDATE pengeluaran SET tanggal_pengeluaran=?, kategori=?, jumlah=?, keterangan=?, operator_id=? WHERE id=?");
-        $stmt->execute([$tanggal, $kategori, $jumlah, $keterangan, $operatorId, $id]);
+        $stmt = $db->prepare("UPDATE pengeluaran SET tanggal_pengeluaran=?, kategori_pengeluaran_id=?, nominal=?, keterangan=?, operator_id=? WHERE id=?");
+        $stmt->execute([$tanggal, $kategoriId, $nominal, $keterangan, $operatorId, $id]);
         redirect('/pemilik/pengeluaran.php', 'success', 'Data pengeluaran berhasil diperbarui.');
     } else {
-        $stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori, jumlah, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$tanggal, $kategori, $jumlah, $keterangan, $operatorId]);
+        $stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori_pengeluaran_id, nominal, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$tanggal, $kategoriId, $nominal, $keterangan, $operatorId]);
         redirect('/pemilik/pengeluaran.php', 'success', 'Data pengeluaran berhasil disimpan.');
     }
 }
@@ -46,16 +49,16 @@ $offset = ($page - 1) * $perPage;
 
 $where = "WHERE 1=1";
 $params = [];
-if ($filterTanggal) { $where .= " AND tanggal_pengeluaran = ?"; $params[] = $filterTanggal; }
-if ($filterKategori) { $where .= " AND kategori = ?"; $params[] = $filterKategori; }
-if ($search) { $where .= " AND (kategori LIKE ? OR keterangan LIKE ?)"; $params[] = "%$search%"; $params[] = "%$search%"; }
+if ($filterTanggal) { $where .= " AND p.tanggal_pengeluaran = ?"; $params[] = $filterTanggal; }
+if ($filterKategori) { $where .= " AND p.kategori_pengeluaran_id = ?"; $params[] = $filterKategori; }
+if ($search) { $where .= " AND (k.nama_kategori LIKE ? OR p.keterangan LIKE ?)"; $params[] = "%$search%"; $params[] = "%$search%"; }
 
-$countStmt = $db->prepare("SELECT COUNT(*) FROM pengeluaran $where");
+$countStmt = $db->prepare("SELECT COUNT(*) FROM pengeluaran p LEFT JOIN kategori_pengeluaran k ON p.kategori_pengeluaran_id = k.id $where");
 $countStmt->execute($params);
 $totalRows = $countStmt->fetchColumn();
 $totalPages = ceil($totalRows / $perPage);
 
-$stmt = $db->prepare("SELECT p.*, u.username as operator_nama FROM pengeluaran p LEFT JOIN users u ON p.operator_id = u.id $where ORDER BY p.tanggal_pengeluaran DESC, p.id DESC LIMIT $perPage OFFSET $offset");
+$stmt = $db->prepare("SELECT p.*, k.nama_kategori, u.username as operator_nama FROM pengeluaran p LEFT JOIN kategori_pengeluaran k ON p.kategori_pengeluaran_id = k.id LEFT JOIN users u ON p.operator_id = u.id $where ORDER BY p.tanggal_pengeluaran DESC, p.id DESC LIMIT $perPage OFFSET $offset");
 $stmt->execute($params);
 $dataList = $stmt->fetchAll();
 
@@ -68,7 +71,7 @@ if (isset($_GET['edit'])) {
 }
 
 // Summary
-$stmt = $db->query("SELECT COALESCE(SUM(jumlah), 0) as total, COUNT(*) as transaksi FROM pengeluaran");
+$stmt = $db->query("SELECT COALESCE(SUM(nominal), 0) as total FROM pengeluaran");
 $summary = $stmt->fetch();
 
 include __DIR__ . '/../layouts/header.php';
@@ -92,11 +95,8 @@ include __DIR__ . '/../layouts/header.php';
     <div class="col-md-4">
         <div class="stat-card">
             <div class="stat-icon orange">📌</div>
-            <div class="stat-label">Kategori Terbanyak</div>
-            <div class="stat-value" style="font-size:16px;"><?php
-                $pop = $db->query("SELECT kategori, COUNT(*) as c FROM pengeluaran GROUP BY kategori ORDER BY c DESC LIMIT 1")->fetch();
-                echo $pop ? e($pop['kategori']) : '-';
-            ?></div>
+            <div class="stat-label">Kategori</div>
+            <div class="stat-value" style="font-size:14px;"><?= count($kategoriList) ?> aktif</div>
         </div>
     </div>
 </div>
@@ -115,9 +115,9 @@ include __DIR__ . '/../layouts/header.php';
             </div>
             <div class="col-md-2">
                 <select name="kategori" class="form-select form-select-sm">
-                    <option value="">Semua</option>
-                    <?php foreach (['Bahan Baku','Listrik','Air','Transportasi','Perawatan','Lainnya'] as $k): ?>
-                    <option value="<?= $k ?>" <?= $filterKategori === $k ? 'selected' : '' ?>><?= $k ?></option>
+                    <option value="">Semua Kategori</option>
+                    <?php foreach ($kategoriList as $k): ?>
+                    <option value="<?= $k['id'] ?>" <?= $filterKategori == $k['id'] ? 'selected' : '' ?>><?= e($k['nama_kategori']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -137,7 +137,7 @@ include __DIR__ . '/../layouts/header.php';
         <div class="table-responsive">
             <table class="table-custom">
                 <thead>
-                    <tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Jumlah</th><th>Keterangan</th><th>Operator</th><th>Aksi</th></tr>
+                    <tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Nominal</th><th>Keterangan</th><th>Operator</th><th>Aksi</th></tr>
                 </thead>
                 <tbody>
                     <?php if (empty($dataList)): ?>
@@ -146,8 +146,8 @@ include __DIR__ . '/../layouts/header.php';
                     <tr>
                         <td><?= $offset + $i + 1 ?></td>
                         <td><?= formatTanggal($row['tanggal_pengeluaran']) ?></td>
-                        <td><span class="badge badge-danger"><?= e($row['kategori']) ?></span></td>
-                        <td><strong style="color:var(--red);"><?= formatRupiah($row['jumlah']) ?></strong></td>
+                        <td><span class="badge badge-danger"><?= e($row['nama_kategori'] ?? '-') ?></span></td>
+                        <td><strong style="color:var(--red);"><?= formatRupiah($row['nominal']) ?></strong></td>
                         <td><?= e($row['keterangan'] ?? '-') ?></td>
                         <td><?= e($row['operator_nama'] ?? '-') ?></td>
                         <td>
@@ -162,7 +162,7 @@ include __DIR__ . '/../layouts/header.php';
 
         <?php if ($totalPages > 1): ?>
         <div class="pagination-wrapper">
-            <span>Menampilkan <?= $offset + 1 ?>-<?= min($offset + $perPage, $totalRows) ?> dari <?= $totalRows ?> data</span>
+            <span><?= $offset + 1 ?>-<?= min($offset + $perPage, $totalRows) ?> dari <?= $totalRows ?></span>
             <ul class="pagination">
                 <?php $qp = http_build_query(array_filter(['tanggal' => $filterTanggal, 'kategori' => $filterKategori, 'search' => $search])); ?>
                 <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="?<?= $qp ?>&page=<?= $page-1 ?>">«</a></li>
@@ -193,16 +193,16 @@ include __DIR__ . '/../layouts/header.php';
                     </div>
                     <div class="form-group">
                         <label class="form-label">Kategori</label>
-                        <select name="kategori" class="form-select" required>
+                        <select name="kategori_pengeluaran_id" class="form-select" required>
                             <option value="">Pilih kategori</option>
-                            <?php foreach (['Bahan Baku','Listrik','Air','Transportasi','Perawatan','Lainnya'] as $k): ?>
-                            <option value="<?= $k ?>" <?= ($editItem['kategori'] ?? '') === $k ? 'selected' : '' ?>><?= $k ?></option>
+                            <?php foreach ($kategoriList as $k): ?>
+                            <option value="<?= $k['id'] ?>" <?= ($editItem['kategori_pengeluaran_id'] ?? '') == $k['id'] ? 'selected' : '' ?>><?= e($k['nama_kategori']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Jumlah (Rp)</label>
-                        <input type="number" name="jumlah" class="form-control" min="0" value="<?= e($editItem['jumlah'] ?? '') ?>" required>
+                        <label class="form-label">Nominal (Rp)</label>
+                        <input type="number" name="nominal" class="form-control" min="0" value="<?= e($editItem['nominal'] ?? '') ?>" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Keterangan</label>

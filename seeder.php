@@ -39,7 +39,26 @@ foreach ($pekerjaList as $p) {
     echo "  ✓ {$p[0]} (Rp" . number_format($p[1]) . "/sak, {$p[2]})\n";
 }
 
-// 3. Stok awal
+// 3. Kategori pengeluaran
+echo "\nMembuat kategori pengeluaran...\n";
+$db->exec("TRUNCATE TABLE kategori_pengeluaran");
+$kategoriPengeluaran = [
+    ['Pembelian Semen', 'aktif'],
+    ['Pembelian Pasir', 'aktif'],
+    ['Solar Kendaraan', 'aktif'],
+    ['Perbaikan Alat', 'aktif'],
+    ['Biaya Transportasi', 'aktif'],
+    ['Biaya Listrik', 'aktif'],
+    ['Biaya Air', 'aktif'],
+    ['Pengeluaran Lainnya', 'aktif'],
+];
+$stmt = $db->prepare("INSERT INTO kategori_pengeluaran (nama_kategori, status) VALUES (?, ?)");
+foreach ($kategoriPengeluaran as $k) {
+    $stmt->execute($k);
+    echo "  ✓ {$k[0]}\n";
+}
+
+// 4. Stok awal
 echo "\nMembuat stok awal...\n";
 $db->exec("TRUNCATE TABLE stok");
 $stmt = $db->prepare("INSERT INTO stok (ukuran_batako, total_produksi, total_penjualan, stok_tersedia) VALUES (?, 0, 0, 0)");

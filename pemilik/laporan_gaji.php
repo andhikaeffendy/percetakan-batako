@@ -14,6 +14,7 @@ $periodeAkhir = $_GET['periode_akhir'] ?? date('Y-m-d');
 $detail = [];
 $totalGajiKeseluruhan = 0;
 $totalSakKeseluruhan = 0;
+$totalPanjarKeseluruhan = 0;
 
 if (isset($_GET['tampilkan'])) {
     // Cek dulu tabel gaji
@@ -21,7 +22,6 @@ if (isset($_GET['tampilkan'])) {
     $stmt->execute([$periodeAwal, $periodeAkhir]);
     $detail = $stmt->fetchAll();
 
-    // Kalau kosong, hitung dari produksi
     if (empty($detail)) {
         $pekerjaAktif = $db->query("SELECT * FROM pekerja WHERE status = 'aktif' ORDER BY nama_pekerja")->fetchAll();
         foreach ($pekerjaAktif as $pk) {
@@ -35,12 +35,14 @@ if (isset($_GET['tampilkan'])) {
                 'nama_pekerja' => $pk['nama_pekerja'],
                 'total_sak_semen' => $totalSak,
                 'tarif_per_sak' => $pk['tarif_per_sak'],
+                'panjar' => 0,
                 'total_gaji' => $totalGaji,
             ];
         }
     } else {
         foreach ($detail as $d) {
             $totalSakKeseluruhan += $d['total_sak_semen'];
+            $totalPanjarKeseluruhan += ($d['panjar'] ?? 0);
             $totalGajiKeseluruhan += $d['total_gaji'];
         }
     }
@@ -144,7 +146,7 @@ include __DIR__ . '/../layouts/header.php';
         <div class="table-responsive">
             <table class="table-custom">
                 <thead>
-                    <tr><th>No</th><th>Nama Pekerja</th><th>Total Sak Semen</th><th>Tarif per Sak</th><th>Total Gaji</th></tr>
+                    <tr><th>No</th><th>Pekerja</th><th>Sak Semen</th><th>Tarif</th><th>Panjar</th><th>Gaji Bersih</th></tr>
                 </thead>
                 <tbody>
                     <?php foreach ($detail as $i => $d): ?>

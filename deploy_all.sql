@@ -1,13 +1,10 @@
 -- ============================================================
 -- deploy_all.sql — TABEL + DATA untuk InfinityFree
 -- ============================================================
--- Cara import:
---   1. Buka phpMyAdmin → pilih database if0_42059089_batako_maros
---   2. Klik tab SQL → Choose File → pilih file ini → Go
--- ============================================================
+-- Cara import: phpMyAdmin → pilih database → SQL → Choose File → Go
 
 -- ========================================
--- BAGIAN 1: BUAT TABEL (7 tabel)
+-- BAGIAN 1: BUAT TABEL (9 tabel)
 -- ========================================
 
 CREATE TABLE IF NOT EXISTS users (
@@ -25,6 +22,14 @@ CREATE TABLE IF NOT EXISTS pekerja (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nama_pekerja VARCHAR(100) NOT NULL,
     tarif_per_sak DECIMAL(10,0) DEFAULT 65000,
+    status ENUM('aktif','nonaktif') DEFAULT 'aktif',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS kategori_pengeluaran (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_kategori VARCHAR(100) NOT NULL,
     status ENUM('aktif','nonaktif') DEFAULT 'aktif',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -72,6 +77,19 @@ CREATE TABLE IF NOT EXISTS penjualan (
     FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS pengeluaran (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tanggal_pengeluaran DATE NOT NULL,
+    kategori_pengeluaran_id INT NOT NULL,
+    nominal DECIMAL(12,0) NOT NULL DEFAULT 0,
+    keterangan TEXT,
+    operator_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (kategori_pengeluaran_id) REFERENCES kategori_pengeluaran(id) ON DELETE RESTRICT,
+    FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS gaji (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pekerja_id INT NOT NULL,
@@ -79,22 +97,13 @@ CREATE TABLE IF NOT EXISTS gaji (
     periode_akhir DATE NOT NULL,
     total_sak_semen DECIMAL(10,2) NOT NULL DEFAULT 0,
     tarif_per_sak DECIMAL(10,0) NOT NULL DEFAULT 65000,
+    panjar DECIMAL(12,0) NOT NULL DEFAULT 0,
     total_gaji DECIMAL(12,0) NOT NULL DEFAULT 0,
+    operator_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (pekerja_id) REFERENCES pekerja(id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS pengeluaran (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    tanggal_pengeluaran DATE NOT NULL,
-    kategori ENUM('Bahan Baku','Listrik','Air','Transportasi','Perawatan','Lainnya') NOT NULL,
-    jumlah DECIMAL(12,0) NOT NULL,
-    keterangan TEXT,
-    operator_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE RESTRICT
+    FOREIGN KEY (pekerja_id) REFERENCES pekerja(id) ON DELETE RESTRICT,
+    FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS stok (
@@ -110,14 +119,10 @@ CREATE TABLE IF NOT EXISTS stok (
 -- BAGIAN 2: SEED DATA
 -- ========================================
 
--- Users (bcrypt hash)
--- pemilik / admin123
--- operator / operator123
 INSERT INTO users (name, username, email, password, role) VALUES
 ('Pemilik Batako', 'pemilik', 'pemilik@batakomaros.com', '$2y$12$BqWmU7bEpHG.kajb9LbeeufiyaDwSdAz9HWn1xtxkPTm.ONWybqBO', 'pemilik'),
 ('Operator 1', 'operator', 'operator@batakomaros.com', '$2y$12$PJAYl4WlxUOiGmLjw76L.uHbsqh5wBmd/LgbdBih/nEKurx.RNtW6', 'operator');
 
--- Pekerja
 INSERT INTO pekerja (nama_pekerja, tarif_per_sak, status) VALUES
 ('Ahmad Fauzi', 65000, 'aktif'),
 ('Budi Santoso', 65000, 'aktif'),
@@ -125,7 +130,16 @@ INSERT INTO pekerja (nama_pekerja, tarif_per_sak, status) VALUES
 ('Rudi Hartono', 65000, 'aktif'),
 ('Slamet Riyadi', 65000, 'nonaktif');
 
--- Stok awal
+INSERT INTO kategori_pengeluaran (nama_kategori, status) VALUES
+('Pembelian Semen', 'aktif'),
+('Pembelian Pasir', 'aktif'),
+('Solar Kendaraan', 'aktif'),
+('Perbaikan Alat', 'aktif'),
+('Biaya Transportasi', 'aktif'),
+('Biaya Listrik', 'aktif'),
+('Biaya Air', 'aktif'),
+('Pengeluaran Lainnya', 'aktif');
+
 INSERT INTO stok (ukuran_batako, total_produksi, total_penjualan, stok_tersedia) VALUES
 ('standar', 0, 0, 0),
 ('besar', 0, 0, 0);

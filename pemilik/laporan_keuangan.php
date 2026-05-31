@@ -24,10 +24,16 @@ $stmt->execute(array_merge([$periodeAwal, $periodeAkhir], $ukuranParam));
 $summary = $stmt->fetch();
 
 // Pengeluaran
-$stmt = $db->prepare("SELECT COALESCE(SUM(jumlah), 0) as total_pengeluaran FROM pengeluaran WHERE tanggal_pengeluaran BETWEEN ? AND ?");
+$stmt = $db->prepare("SELECT COALESCE(SUM(nominal), 0) as total_pengeluaran FROM pengeluaran WHERE tanggal_pengeluaran BETWEEN ? AND ?");
 $stmt->execute([$periodeAwal, $periodeAkhir]);
 $totalPengeluaran = (int)$stmt->fetchColumn();
-$labaBersih = (int)$summary['total_pendapatan'] - $totalPengeluaran;
+
+// Gaji
+$stmt = $db->prepare("SELECT COALESCE(SUM(total_gaji), 0) FROM gaji WHERE periode_awal >= ? AND periode_akhir <= ?");
+$stmt->execute([$periodeAwal, $periodeAkhir]);
+$totalGaji = (int)$stmt->fetchColumn();
+
+$labaBersih = (int)$summary['total_pendapatan'] - $totalPengeluaran - $totalGaji;
 
 // Chart bulanan
 $labelsBulan = [];

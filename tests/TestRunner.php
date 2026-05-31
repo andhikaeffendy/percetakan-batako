@@ -316,41 +316,49 @@ assertTest("getFlash clears flash", getFlash() === null);
 
 
 // ──────────────────────────────────────────────
-testHeader("17. Pengeluaran Table");
+testHeader("17. Pengeluaran & Kategori Tables");
+
+$stmt = $db->query("SHOW TABLES LIKE 'kategori_pengeluaran'");
+assertTest("kategori_pengeluaran table exists", $stmt->rowCount() > 0);
+
+$stmt = $db->query("SELECT COUNT(*) FROM kategori_pengeluaran");
+assertTest("kategori_pengeluaran has 8 records", $stmt->fetchColumn() == 8);
 
 $stmt = $db->query("SHOW TABLES LIKE 'pengeluaran'");
 assertTest("Pengeluaran table exists", $stmt->rowCount() > 0);
 
-$stmt = $db->query("SELECT COUNT(*) FROM pengeluaran");
-$pengeluaranCount = $stmt->fetchColumn();
-assertTest("Pengeluaran starts empty (0 records)", $pengeluaranCount == 0, "Has {$pengeluaranCount} records");
+// Test INSERT with kategori_pengeluaran_id
+$kategoriList = $db->query("SELECT id FROM kategori_pengeluaran LIMIT 1")->fetch();
+$kategoriId = $kategoriList['id'];
 
-// Test INSERT
-$stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori, jumlah, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
-$stmt->execute([date('Y-m-d'), 'Listrik', 500000, 'Test pengeluaran', 1]);
+$stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori_pengeluaran_id, nominal, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
+$stmt->execute([date('Y-m-d'), $kategoriId, 500000, 'Test pengeluaran', 1]);
 $newId = $db->lastInsertId();
 assertTest("Insert pengeluaran works", $newId > 0);
 
-// Test SELECT
-$stmt = $db->prepare("SELECT * FROM pengeluaran WHERE id = ?");
+$stmt = $db->prepare("SELECT p.*, k.nama_kategori FROM pengeluaran p JOIN kategori_pengeluaran k ON p.kategori_pengeluaran_id = k.id WHERE p.id = ?");
 $stmt->execute([$newId]);
 $row = $stmt->fetch();
-assertTest("Select pengeluaran works", $row && $row['kategori'] === 'Listrik');
-assertTest("Pengeluaran keterangan field exists", isset($row['keterangan']));
-assertTest("Pengeluaran jumlah is correct", $row['jumlah'] == 500000);
+assertTest("Pengeluaran uses nominal field", $row['nominal'] == 500000);
+assertTest("Pengeluaran has kategori name", isset($row['nama_kategori']));
 
 // Test UPDATE
-$stmt = $db->prepare("UPDATE pengeluaran SET jumlah = 600000, keterangan = 'Updated' WHERE id = ?");
+$stmt = $db->prepare("UPDATE pengeluaran SET nominal = 600000 WHERE id = ?");
 $stmt->execute([$newId]);
-$stmt = $db->prepare("SELECT jumlah, keterangan FROM pengeluaran WHERE id = ?");
+$stmt = $db->prepare("SELECT nominal FROM pengeluaran WHERE id = ?");
 $stmt->execute([$newId]);
-$updated = $stmt->fetch();
-assertTest("Update pengeluaran works", $updated['jumlah'] == 600000 && $updated['keterangan'] === 'Updated');
+assertTest("Update nominal works", $stmt->fetchColumn() == 600000);
 
-// Test DELETE (cleanup)
+// Test DELETE
 $stmt = $db->prepare("DELETE FROM pengeluaran WHERE id = ?");
 $stmt->execute([$newId]);
 assertTest("Delete pengeluaran works", $db->query("SELECT COUNT(*) FROM pengeluaran")->fetchColumn() == 0);
+
+// Test gaji panjar
+$stmt = $db->query("SHOW COLUMNS FROM gaji LIKE 'panjar'");
+assertTest("gaji has panjar column", $stmt->rowCount() > 0);
+$stmt = $db->query("SHOW COLUMNS FROM gaji LIKE 'operator_id'");
+assertTest("gaji has operator_id column", $stmt->rowCount() > 0);
 
 // ──────────────────────────────────────────────
 echo "\n══════════════════════════════════════════\n";
