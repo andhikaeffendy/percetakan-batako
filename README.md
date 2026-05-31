@@ -40,7 +40,8 @@ Website operasional untuk **UMKM Percetakan Batako Maros, Ambon, Maluku** — me
 | 6 | **Gaji Otomatis** | Total sak semen × tarif per sak per pekerja |
 | 7 | **Validasi Stok** | Penjualan tidak boleh melebihi stok tersedia |
 | 8 | **Laporan** | Produksi vs Penjualan, Keuangan, Gaji + Chart.js |
-| 9 | **PDF & Excel** | Cetak laporan (Dompdf) + Export data (PhpSpreadsheet) |
+| 9 | **PDF & Excel** | Cetak laporan PDF (Dompdf) + Export data Excel (PhpSpreadsheet) |
+| 10 | **Automated Tests** | 65 test scenarios — database integrity, business logic, helper functions |
 | 10 | **Responsive** | Nyaman di laptop/PC dan HP (Bootstrap 5) |
 | 11 | **Pagination + Filter** | Tabel dapat difilter tanggal/ukuran/search & dipaginasi |
 | 12 | **Flash Messages** | Notifikasi sukses/gagal setelah setiap aksi CRUD |
@@ -444,6 +445,8 @@ umkm-percetakan-batako/
 │   └── js/
 │       └── app.js            # Sidebar toggle, auto-hitung, delete confirm
 │
+├── tests/
+│   └── TestRunner.php         # Automated test suite (65 tests)
 └── vendor/                   # Composer dependencies (auto-generated)
 ```
 
@@ -539,6 +542,22 @@ sudo systemctl restart apache2
 ---
 
 ## 📝 Catatan Pengembangan
+
+### Jalankan Test Suite
+
+Proyek memiliki **65 automated tests** yang mencakup:
+- Koneksi database & struktur tabel
+- Validasi data seed (users, pekerja, stok, produksi, penjualan)
+- Logika bisnis: perhitungan stok, validasi stok, perhitungan gaji
+- Integritas foreign key
+- Fungsi helper: formatRupiah, formatTanggal, e(), CSRF
+- Fungsi auth: isLoggedIn, isPemilik, isOperator
+- Flash messages
+
+```bash
+# Jalankan semua test
+php tests/TestRunner.php
+```
 
 ### Reset Data
 
