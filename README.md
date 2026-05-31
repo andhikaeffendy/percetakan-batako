@@ -13,6 +13,9 @@ Website operasional untuk **UMKM Percetakan Batako Maros, Ambon, Maluku** — me
   - [1. Install XAMPP](#1-install-xampp-apache--mysql--php)
   - [2. Install Composer](#2-install-composer)
   - [3. Install Git](#3-install-git-opsional-untuk-clone)
+  - [4. Install VS Code](#4-install-vs-code-editor-kode)
+  - [5. Buka Project di VS Code](#5-buka-project-di-vs-code)
+  - [6. Terminal di VS Code](#6-terminal-di-vs-code)
 - [Jalankan Project di Windows](#-jalankan-project-di-windows)
   - [Step 1: Download](#step-1-download-project)
   - [Step 2: Dependencies](#step-2-install-dependencies)
@@ -174,6 +177,70 @@ Composer untuk install library PHP (Dompdf, PhpSpreadsheet, Dotenv).
 1. Buka https://git-scm.com
 2. Download -> jalankan installer -> Next -> Finish
 3. Verifikasi: `git --version`
+
+---
+
+### 4. Install VS Code (Editor Kode)
+
+VS Code adalah editor kode gratis dari Microsoft, sangat cocok untuk PHP.
+
+**Download & Install:**
+1. Buka https://code.visualstudio.com
+2. Klik **Download for Windows** -> jalankan `.exe`
+3. Centang semua opsi saat install (terutama **Add to PATH**)
+4. Next -> Install -> Finish
+
+**Install Extension Wajib:**
+
+Buka VS Code -> klik icon Extensions (Ctrl+Shift+X) -> cari & install:
+
+| Extension | Fungsi |
+|-----------|--------|
+| **PHP Intelephense** | Autocomplete, error detection, code navigation PHP |
+| **Laravel Extra Intellisense** | (auto-install bareng Intelephense) |
+| **Prettier** | Format kode otomatis (HTML, CSS, JS, PHP) |
+| **Material Icon Theme** | Icon folder & file biar rapi |
+| **Live Server** | Preview HTML live (klik kanan -> Open with Live Server) |
+| **GitLens** | Lihat history git langsung di editor |
+
+**Verifikasi:** Buka VS Code -> ketik `Ctrl+Shift+P` -> "PHP: Open Settings" -> jika muncul = PHP extension aktif.
+
+---
+
+### 5. Buka Project di VS Code
+
+**Cara 1 - Dari CMD:**
+```cmd
+cd C:\xampp\htdocs\percetakan-batako
+code .
+```
+
+**Cara 2 - Dari VS Code:**
+1. Buka VS Code
+2. File -> Open Folder (`Ctrl+K Ctrl+O`)
+3. Pilih `C:\xampp\htdocs\percetakan-batako`
+4. Klik **Select Folder**
+
+**Yang harus muncul:**
+- Sidebar kiri: daftar folder (`config/`, `helpers/`, `layouts/`, `pemilik/`, `operator/`, `assets/`)
+- Klik file `.php` -> syntax berwarna (ada highlight)
+- `Ctrl+P` -> ketik nama file -> langsung loncat ke file itu
+
+---
+
+### 6. Terminal di VS Code
+
+VS Code punya terminal built-in. Bisa buka CMD/PowerShell langsung dari editor:
+
+- `Ctrl+\`` (backtick) -> buka terminal
+- Ketik perintah:
+```cmd
+composer install
+php seeder.php
+php -S localhost:8000
+```
+
+> Semua perintah project bisa dijalankan dari terminal VS Code ini — tidak perlu pindah ke CMD.
 
 ---
 
