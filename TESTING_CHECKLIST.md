@@ -32,3 +32,15 @@
 | 28 | Flash | Flash message | Setelah CRUD action | Muncul alert sukses/gagal | ✅ |
 | 29 | Delete | Konfirmasi hapus | Klik tombol hapus | Muncul konfirmasi JavaScript | ✅ |
 | 30 | Auto | Total penjualan auto | Input jumlah & harga | Total terhitung otomatis via JavaScript | ✅ |
+| 31 | Export | Excel Export | Klik Export Excel | File .xlsx terdownload | ✅ |
+| 32 | Export | PDF Export Produksi | Klik Cetak PDF | File .pdf terdownload | ✅ |
+| 33 | Export | PDF Laporan Produksi | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
+| 34 | Export | PDF Laporan Keuangan | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
+| 35 | Export | PDF Laporan Gaji | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
+| 36 | Test | Automated Test Suite | `php tests/TestRunner.php` | 65/65 passed | ✅ |
+| 31 | Export | Excel Export | Klik Export Excel | File .xlsx terdownload | ✅ |
+| 32 | Export | PDF Export Produksi | Klik Cetak PDF | File .pdf terdownload | ✅ |
+| 33 | Export | PDF Laporan Produksi | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
+| 34 | Export | PDF Laporan Keuangan | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
+| 35 | Export | PDF Laporan Gaji | Pilih periode → Klik PDF | File .pdf terdownload | ✅ |
+| 36 | Test | Automated Test Suite | Jalankan `php tests/TestRunner.php` | 65/65 tests passed | ✅ |
