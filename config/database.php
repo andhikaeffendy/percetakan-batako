@@ -1,26 +1,24 @@
 <?php
 // config/database.php
-// Koneksi database PDO — mendukung .env file
+// Koneksi database PDO — InfinityFree ready
 
-// Load .env menggunakan phpdotenv jika ada
+// Load .env jika ada
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
     if (file_exists(__DIR__ . '/../.env')) {
         try {
             $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
             $dotenv->load();
-        } catch (\Exception $e) {
-            // fallback
-        }
+        } catch (\Exception $e) {}
     }
 }
 
-// Define konstanta dari environment dengan fallback
+// Define konstanta — .env dulu, fallback ke production
 $envDefaults = [
-    'DB_HOST' => 'localhost',
-    'DB_NAME' => 'db_batako_maros',
-    'DB_USER' => 'root',
-    'DB_PASS' => '',
+    'DB_HOST' => 'sql105.infinityfree.com',
+    'DB_NAME' => 'if0_42059089_batako_maros',
+    'DB_USER' => 'if0_42059089',
+    'DB_PASS' => 'Batako2026',
 ];
 foreach ($envDefaults as $key => $default) {
     if (!defined($key)) {
