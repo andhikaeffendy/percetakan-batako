@@ -1,29 +1,35 @@
 <?php
 // config/database.php
-// Koneksi database PDO — InfinityFree ready
+// Koneksi database PDO — .env (prioritas) atau production fallback
 
 // Load .env jika ada
+$envLoaded = false;
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
     if (file_exists(__DIR__ . '/../.env')) {
         try {
             $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
             $dotenv->load();
+            $envLoaded = !empty($_ENV['DB_HOST']);
         } catch (\Exception $e) {}
     }
 }
 
-// Define konstanta — .env dulu, fallback ke production
-$envDefaults = [
+// Fallback production (InfinityFree)
+$production = [
     'DB_HOST' => 'sql105.infinityfree.com',
     'DB_NAME' => 'if0_42059089_batako_maros',
     'DB_USER' => 'if0_42059089',
     'DB_PASS' => 'Batako2026',
 ];
-foreach ($envDefaults as $key => $default) {
+
+foreach ($production as $key => $fallback) {
     if (!defined($key)) {
-        $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key) ?: $default;
-        define($key, $value);
+        if ($envLoaded) {
+            define($key, $_ENV[$key] ?? '');
+        } else {
+            define($key, $fallback);
+        }
     }
 }
 
