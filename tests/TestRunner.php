@@ -49,7 +49,7 @@ assertTest("Database 'db_batako_maros' exists", $dbName === 'db_batako_maros');
 // ──────────────────────────────────────────────
 testHeader("2. Table Structure");
 
-$tables = ['users', 'pekerja', 'bahan_baku', 'produksi', 'penjualan', 'gaji', 'stok'];
+$tables = ['users', 'pekerja', 'bahan_baku', 'produksi', 'penjualan', 'gaji', 'stok', 'stok_bahan_baku', 'stok_produk'];
 foreach ($tables as $table) {
     $stmt = $db->query("SHOW TABLES LIKE '{$table}'");
     assertTest("Table '{$table}' exists", $stmt->rowCount() > 0);
@@ -65,6 +65,18 @@ $stmt = $db->query("DESCRIBE stok");
 $stokCols = $stmt->fetchAll(PDO::FETCH_COLUMN);
 assertTest("stok has ukuran_batako, total_produksi, total_penjualan, stok_tersedia",
     in_array('ukuran_batako', $stokCols) && in_array('stok_tersedia', $stokCols));
+
+$stmt = $db->query("DESCRIBE bahan_baku");
+$bahanCols = $stmt->fetchAll(PDO::FETCH_COLUMN);
+assertTest("bahan_baku has jenis_transaksi column", in_array('jenis_transaksi', $bahanCols));
+
+$stmt = $db->query("DESCRIBE stok_bahan_baku");
+$stokBahanCols = $stmt->fetchAll(PDO::FETCH_COLUMN);
+assertTest("stok_bahan_baku has status column", in_array('status', $stokBahanCols));
+
+$stmt = $db->query("DESCRIBE stok_produk");
+$stokProdukCols = $stmt->fetchAll(PDO::FETCH_COLUMN);
+assertTest("stok_produk has status column", in_array('status', $stokProdukCols));
 
 
 // ──────────────────────────────────────────────
@@ -112,6 +124,12 @@ $stmt = $db->query("SELECT ukuran_batako, stok_tersedia FROM stok ORDER BY ukura
 $stokRows = $stmt->fetchAll();
 assertTest("Stok standar > 0", $stokRows[0]['stok_tersedia'] > 0);
 assertTest("Stok besar > 0", $stokRows[1]['stok_tersedia'] > 0);
+
+$stmt = $db->query("SELECT COUNT(*) FROM stok_bahan_baku");
+assertTest("Stok bahan baku has 2 records (Semen, Pasir)", $stmt->fetchColumn() == 2);
+
+$stmt = $db->query("SELECT COUNT(*) FROM stok_produk");
+assertTest("Stok produk has 2 records (standar, besar)", $stmt->fetchColumn() == 2);
 
 
 // ──────────────────────────────────────────────
@@ -196,6 +214,77 @@ assertTest("Stock decreased by 5 after sale", $stokAfter === $stokBefore - 5, "B
 // Cleanup
 $db->prepare("DELETE FROM penjualan WHERE id = ?")->execute([$newSaleId]);
 updateStok($db);
+
+
+// ──────────────────────────────────────────────
+testHeader("9b. Business Logic — Material Stock Sync");
+
+// Stock bahan = SUM(pembelian) - SUM(penggunaan) per jenis
+foreach (['Semen', 'Pasir'] as $jenis) {
+    $stmt = $db->prepare("SELECT COALESCE(SUM(jumlah), 0) FROM bahan_baku WHERE jenis_bahan = ? AND jenis_transaksi = 'pembelian'");
+    $stmt->execute([$jenis]);
+    $beli = (float)$stmt->fetchColumn();
+
+    $stmt = $db->prepare("SELECT COALESCE(SUM(jumlah), 0) FROM bahan_baku WHERE jenis_bahan = ? AND jenis_transaksi = 'penggunaan'");
+    $stmt->execute([$jenis]);
+    $pakai = (float)$stmt->fetchColumn();
+
+    $expected = max(0, $beli - $pakai);
+
+    $stmt = $db->prepare("SELECT jumlah FROM stok_bahan_baku WHERE jenis_bahan = ?");
+    $stmt->execute([$jenis]);
+    $actual = (float)$stmt->fetchColumn();
+
+    assertTest("Stok bahan {$jenis}: {$beli} - {$pakai} = {$actual}",
+        abs($expected - $actual) < 0.001,
+        "Expected {$expected}, got {$actual}");
+}
+
+// Insert a purchase -> stock up
+$stmt = $db->prepare("SELECT jumlah FROM stok_bahan_baku WHERE jenis_bahan = 'Semen'");
+$stmt->execute();
+$stokBahanBefore = (float)$stmt->fetchColumn();
+
+$stmt = $db->prepare("INSERT INTO bahan_baku (tanggal_penggunaan, jenis_transaksi, jenis_bahan, jumlah, satuan, keterangan, operator_id) VALUES (?, 'pembelian', 'Semen', 5, 'Sak', 'Test beli', 1)");
+$stmt->execute([date('Y-m-d')]);
+$newBahanId = $db->lastInsertId();
+
+updateStokBahan($db, 'Semen');
+
+$stmt = $db->prepare("SELECT jumlah FROM stok_bahan_baku WHERE jenis_bahan = 'Semen'");
+$stmt->execute();
+$stokBahanAfter = (float)$stmt->fetchColumn();
+assertTest("Stock bahan Semen increased by 5 after purchase", abs($stokBahanAfter - ($stokBahanBefore + 5)) < 0.001, "Before: {$stokBahanBefore}, After: {$stokBahanAfter}");
+
+// Insert a usage -> stock down
+$stmt = $db->prepare("INSERT INTO bahan_baku (tanggal_penggunaan, jenis_transaksi, jenis_bahan, jumlah, satuan, keterangan, operator_id) VALUES (?, 'penggunaan', 'Semen', 2, 'Sak', 'Test pakai', 1)");
+$stmt->execute([date('Y-m-d')]);
+$newBahanId2 = $db->lastInsertId();
+
+updateStokBahan($db, 'Semen');
+
+$stmt = $db->prepare("SELECT jumlah FROM stok_bahan_baku WHERE jenis_bahan = 'Semen'");
+$stmt->execute();
+$stokBahanAfterUse = (float)$stmt->fetchColumn();
+assertTest("Stock bahan Semen decreased by 2 after usage", abs($stokBahanAfterUse - ($stokBahanAfter - 2)) < 0.001, "Before: {$stokBahanAfter}, After: {$stokBahanAfterUse}");
+
+// Cleanup
+$db->prepare("DELETE FROM bahan_baku WHERE id IN (?, ?)")->execute([$newBahanId, $newBahanId2]);
+updateStokBahan($db, 'Semen');
+
+
+// ──────────────────────────────────────────────
+testHeader("9c. Business Logic — Stock Status Thresholds");
+
+assertTest("hitungStatusStok(0, 'Semen') = Habis", hitungStatusStok(0, 'Semen') === 'Habis');
+assertTest("hitungStatusStok(5, 'Semen') = Menipis", hitungStatusStok(5, 'Semen') === 'Menipis');
+assertTest("hitungStatusStok(10, 'Semen') = Menipis", hitungStatusStok(10, 'Semen') === 'Menipis');
+assertTest("hitungStatusStok(11, 'Semen') = Aman", hitungStatusStok(11, 'Semen') === 'Aman');
+assertTest("hitungStatusStok(1, 'Pasir') = Menipis", hitungStatusStok(1, 'Pasir') === 'Menipis');
+assertTest("hitungStatusStok(2, 'Pasir') = Menipis", hitungStatusStok(2, 'Pasir') === 'Menipis');
+assertTest("hitungStatusStok(3, 'Pasir') = Aman", hitungStatusStok(3, 'Pasir') === 'Aman');
+assertTest("hitungStatusStok(100, 'standar') = Menipis", hitungStatusStok(100, 'standar') === 'Menipis');
+assertTest("hitungStatusStok(101, 'besar') = Aman", hitungStatusStok(101, 'besar') === 'Aman');
 
 
 // ──────────────────────────────────────────────
@@ -285,6 +374,11 @@ assertTest("getAllStok values are integers", is_int($allStok['standar']) && is_i
 
 $stokStandar = getStok($db, 'standar');
 assertTest("getStok('standar') matches getAllStok['standar']", $stokStandar === $allStok['standar']);
+
+// getStok/getAllStok must read from stok_produk (new canonical table)
+$stmt = $db->prepare("SELECT jumlah_stok FROM stok_produk WHERE ukuran_batako = 'standar'");
+$stmt->execute();
+assertTest("getStok reads stok_produk", $stokStandar === (int)$stmt->fetchColumn());
 
 
 // ──────────────────────────────────────────────

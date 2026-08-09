@@ -103,8 +103,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 include __DIR__ . '/../layouts/header.php';
 ?>
 
+<div class="page-toolbar">
+    <div><h3>Laporan Produksi</h3><p>Bandingkan produksi dan penjualan untuk memantau keseimbangan operasional.</p></div>
+</div>
 <div class="card mb-4">
-    <div class="card-header"><h5><i class="bi bi-funnel"></i> Filter Laporan</h5></div>
+    <div class="card-header"><h5><i class="bi bi-sliders"></i> Periode &amp; Ekspor Laporan</h5></div>
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-3">
@@ -137,21 +140,21 @@ include __DIR__ . '/../layouts/header.php';
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon blue">🏭</div>
+            <div class="stat-icon blue"><i class="bi bi-bricks"></i></div>
             <div class="stat-label">Total Produksi</div>
             <div class="stat-value"><?= number_format($summary['total_produksi']) ?></div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon orange">💰</div>
+            <div class="stat-icon orange"><i class="bi bi-cash-coin"></i></div>
             <div class="stat-label">Total Penjualan</div>
             <div class="stat-value"><?= number_format($summary['total_penjualan']) ?></div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon <?= $selisih >= 0 ? 'green' : 'red' ?>">📊</div>
+            <div class="stat-icon <?= $selisih >= 0 ? 'green' : 'red' ?>"><i class="bi bi-bars"></i></div>
             <div class="stat-label">Selisih</div>
             <div class="stat-value"><?= number_format($selisih) ?></div>
         </div>
@@ -199,19 +202,50 @@ include __DIR__ . '/../layouts/header.php';
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+// Tema chart konsisten — Neo-Industrial palette
+Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#5A636E';
+Chart.defaults.borderColor = 'rgba(39,49,58,0.08)';
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(35,42,49,0.92)';
+Chart.defaults.plugins.tooltip.titleColor = '#fff';
+Chart.defaults.plugins.tooltip.bodyColor = '#E8E3DA';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+
+// ————— Format angka konsisten —————
+const fmtRp = (v) => 'Rp ' + Number(v).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+const fmtNum = (v) => Number(v).toLocaleString('id-ID');
+
+// Axis ticks: hindari desimal & label miring saat padat
+Chart.defaults.scales.linear.ticks = {
+    callback(value) { return (Math.round(value * 10) / 10) % 1 === 0 ? value : ''; },
+    maxTicksLimit: 6
+};
+Chart.defaults.scales.category.ticks = {
+    autoSkip: true,
+    maxRotation: 0,
+    minRotation: 0,
+    autoSkipPadding: 18
+};
+
 new Chart(document.getElementById('chartLaporan'), {
-    type: 'bar',
+    type: 'line',
     data: {
         labels: <?= json_encode($labels) ?>,
         datasets: [
-            { label: 'Produksi', data: <?= json_encode($produksiData) ?>, backgroundColor: '#2563EB', borderRadius: 6, borderSkipped: false },
-            { label: 'Penjualan', data: <?= json_encode($penjualanData) ?>, backgroundColor: '#D97706', borderRadius: 6, borderSkipped: false }
+            { label: 'Produksi', data: <?= json_encode($produksiData) ?>, borderColor: '#2F67C7', backgroundColor: 'rgba(47,103,199,0.10)', fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, spanGaps: true },
+            { label: 'Penjualan', data: <?= json_encode($penjualanData) ?>, borderColor: '#C65A32', backgroundColor: 'rgba(198,90,50,0.08)', fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, spanGaps: true }
         ]
     },
     options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' } },
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + Number(ctx.parsed.y).toLocaleString('id-ID') + ' pcs' } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(39,49,58,0.06)' } } },
+        interaction: { mode: 'index', intersect: false }
     }
 });
 </script>

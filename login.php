@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="login-page">
     <div class="login-card">
         <div class="login-header">
-            <div class="brand-icon">🧱</div>
+            <div class="brand-icon"><i class="bi bi-boxes"></i></div>
             <h2>Percetakan Batako Maros</h2>
             <p>Sistem Informasi Operasional Produksi Batako</p>
         </div>

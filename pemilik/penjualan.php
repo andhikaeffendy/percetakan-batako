@@ -28,13 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pembeli = $_POST['nama_pembeli'] ?? null;
     $operatorId = $_SESSION['user_id'];
 
-    // Cek stok
-    $stmt = $db->prepare("SELECT COALESCE(SUM(realisasi_produksi), 0) - COALESCE(SUM(jumlah_terjual), 0) as stok FROM produksi p LEFT JOIN penjualan pj ON p.ukuran_batako = pj.ukuran_batako WHERE p.ukuran_batako = ?");
-    // Hitung stok per ukuran
-    $stmt = $db->prepare("SELECT stok_tersedia FROM stok WHERE ukuran_batako = ?");
-    $stmt->execute([$ukuran]);
-    $stokRow = $stmt->fetch();
-    $stokTersedia = $stokRow ? $stokRow['stok_tersedia'] : 0;
+    // Cek stok (dari stok_produk — canonical)
+    $stokTersedia = getStok($db, $ukuran);
 
     // Jika edit, tambahkan kembali jumlah lama ke stok
     if ($id) {
@@ -107,21 +102,21 @@ include __DIR__ . '/../layouts/header.php';
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon orange">💰</div>
+            <div class="stat-icon orange"><i class="bi bi-cash-coin"></i></div>
             <div class="stat-label">Total Pendapatan</div>
             <div class="stat-value" style="font-size:18px;"><?= formatRupiah($summary['total_pendapatan']) ?></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon blue">📦</div>
+            <div class="stat-icon blue"><i class="bi bi-box-seam"></i></div>
             <div class="stat-label">Total Batako Terjual</div>
             <div class="stat-value"><?= number_format($summary['total_terjual']) ?></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon green">📊</div>
+            <div class="stat-icon green"><i class="bi bi-bars"></i></div>
             <div class="stat-label">Total Transaksi</div>
             <div class="stat-value"><?= number_format($totalRows) ?></div>
         </div>
@@ -185,7 +180,7 @@ include __DIR__ . '/../layouts/header.php';
                     <tr>
                         <td><?= $offset + $i + 1 ?></td>
                         <td><?= formatTanggal($row['tanggal_penjualan']) ?></td>
-                        <td><span class="badge badge-warning"><?= e(ucfirst($row['ukuran_batako'])) ?></span></td>
+                        <td><span class="badge badge-primary"><?= e(ucfirst($row['ukuran_batako'])) ?></span></td>
                         <td><?= number_format($row['jumlah_terjual']) ?></td>
                         <td><?= formatRupiah($row['harga_satuan']) ?></td>
                         <td><strong><?= formatRupiah($row['total_penjualan']) ?></strong></td>
@@ -220,7 +215,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <!-- Modal Form -->
 <div class="modal fade" id="modalForm" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form method="POST">
                 <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">

@@ -35,13 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="page-toolbar">
-    <div><h3>Input Bahan Baku</h3><p>Catat pembelian atau penggunaan bahan untuk menjaga stok bahan tetap akurat.</p></div>
-</div>
-<div class="row g-4">
+<div class="row g-3">
     <div class="col-lg-8">
-        <div class="card form-workspace">
-            <div class="card-header"><h5><i class="bi bi-box-seam"></i> Detail Transaksi Bahan</h5></div>
+        <div class="card">
+            <div class="card-header"><h5><i class="bi bi-box-seam"></i> Form Input Bahan Baku</h5></div>
             <div class="card-body">
                 <?php if ($success): ?>
                 <div class="alert alert-success"><i class="bi bi-check-circle"></i> Transaksi bahan baku berhasil disimpan! Stok otomatis diperbarui.</div>
@@ -55,10 +52,10 @@ include __DIR__ . '/../layouts/header.php';
                             <div class="form-group">
                                 <label class="form-label">Jenis Transaksi</label>
                                 <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary btn-lg flex-fill" name="aksi" value="pembelian">
+                                    <button type="submit" class="btn btn-success btn-lg flex-fill" name="aksi" value="pembelian">
                                         <i class="bi bi-plus-circle"></i> Simpan Pembelian
                                     </button>
-                                    <button type="submit" class="btn btn-light btn-lg flex-fill" name="aksi" value="penggunaan">
+                                    <button type="submit" class="btn btn-warning btn-lg flex-fill" style="color:white;" name="aksi" value="penggunaan">
                                         <i class="bi bi-dash-circle"></i> Simpan Penggunaan
                                     </button>
                                 </div>

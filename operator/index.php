@@ -1,5 +1,5 @@
 <?php
-// operator/index.php — Beranda Operator
+// operator/index.php — Dashboard Operator
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/auth.php';
 require_once __DIR__ . '/../helpers/functions.php';
@@ -8,261 +8,52 @@ requireRole('operator');
 $db = getDB();
 $pageTitle = 'Beranda Operator';
 $today = date('Y-m-d');
-$monthStart = date('Y-m-01');
-$monthEnd = date('Y-m-t');
 
-// ──────────────────────────────────────────────
-// KPI CARD 1 — PRODUKSI HARI INI (BLUE)
-// ──────────────────────────────────────────────
-$stmt = $db->prepare("SELECT 
-    COALESCE(SUM(realisasi_produksi), 0) as total_produksi,
-    COALESCE(SUM(target_produksi), 0) as total_target
-    FROM produksi WHERE tanggal_produksi = ?");
-$stmt->execute([$today]);
-$prodToday = $stmt->fetch();
-$produksiHariIni = (int)$prodToday['total_produksi'];
-$targetHariIni = (int)$prodToday['total_target'];
-
-// ──────────────────────────────────────────────
-// KPI CARD 2 — STOK TERSEDIA (GREEN)
-// ──────────────────────────────────────────────
+$stmt = $db->prepare("SELECT COALESCE(SUM(realisasi_produksi),0) FROM produksi WHERE tanggal_produksi=?");
+$stmt->execute([$today]); $produksiHariIni = (int)$stmt->fetchColumn();
+$stmt = $db->prepare("SELECT COALESCE(SUM(target_produksi),0) FROM produksi WHERE tanggal_produksi=?");
+$stmt->execute([$today]); $targetHariIni = (int)$stmt->fetchColumn();
+$stmt = $db->prepare("SELECT COALESCE(SUM(total_penjualan),0) FROM penjualan WHERE tanggal_penjualan=?");
+$stmt->execute([$today]); $pendapatanHariIni = (float)$stmt->fetchColumn();
+$stmt = $db->prepare("SELECT COALESCE(SUM(nominal),0) FROM pengeluaran WHERE tanggal_pengeluaran=?");
+$stmt->execute([$today]); $pengeluaranHariIni = (float)$stmt->fetchColumn();
 $allStok = getAllStok($db);
-$totalStok = $allStok['standar'] + $allStok['besar'];
-
-// ──────────────────────────────────────────────
-// KPI CARD 3 — PENDAPATAN HARI INI (ORANGE)
-// ──────────────────────────────────────────────
-$stmt = $db->prepare("SELECT COALESCE(SUM(total_penjualan), 0) as total FROM penjualan WHERE tanggal_penjualan = ?");
-$stmt->execute([$today]);
-$pendapatanHariIni = (int)$stmt->fetchColumn();
-
-$stmt = $db->prepare("SELECT COALESCE(SUM(total_penjualan), 0) as total FROM penjualan WHERE tanggal_penjualan BETWEEN ? AND ?");
-$stmt->execute([$monthStart, $monthEnd]);
-$pendapatanBulanIni = (int)$stmt->fetchColumn();
-
-// ──────────────────────────────────────────────
-// KPI CARD 4 — PENGELUARAN HARI INI (RED)
-// ──────────────────────────────────────────────
-$stmt = $db->prepare("SELECT COALESCE(SUM(nominal), 0) as total FROM pengeluaran WHERE tanggal_pengeluaran = ?");
-$stmt->execute([$today]);
-$pengeluaranHariIni = (int)$stmt->fetchColumn();
-
-// ──────────────────────────────────────────────
-// RECENT DATA
-// ──────────────────────────────────────────────
+$totalStok = array_sum($allStok);
 $recentBahan = $db->query("SELECT * FROM bahan_baku ORDER BY id DESC LIMIT 5")->fetchAll();
-$recentProduksi = $db->query("SELECT p.*, pk.nama_pekerja FROM produksi p LEFT JOIN pekerja pk ON p.pekerja_id = pk.id ORDER BY p.id DESC LIMIT 5")->fetchAll();
+$recentProduksi = $db->query("SELECT * FROM produksi ORDER BY id DESC LIMIT 5")->fetchAll();
 $recentPenjualan = $db->query("SELECT * FROM penjualan ORDER BY id DESC LIMIT 5")->fetchAll();
 
 include __DIR__ . '/../layouts/header.php';
 ?>
-
-<!-- ===== GREETING ===== -->
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="dash-hero operator-hero">
     <div>
-        <h4 style="font-weight:700;margin-bottom:2px;">Selamat datang, <?= e($_SESSION['name']) ?>! 👋</h4>
-        <p style="color:var(--text-muted);margin:0;font-size:13px;">
-            <?= date('l, d F Y') ?> — Ringkasan operasional hari ini
-        </p>
+        <span class="hero-kicker"><i class="bi bi-person-workspace"></i> Ruang kerja operator</span>
+        <h3>Selamat datang, <?= e($_SESSION['name']) ?></h3>
+        <p><?= date('l, d F Y') ?> · Catat operasional harian dengan data yang terhubung ke stok dan laporan.</p>
     </div>
-    <span class="badge badge-success" style="font-size:12px;padding:6px 14px;">
-        🟢 Operasional Berjalan
-    </span>
+    <div class="hero-status"><i class="bi bi-check2-circle"></i> Operasional aktif</div>
 </div>
 
-<!-- ===== KPI CARDS — EXACT 3-COLUMN ANALISA DESIGN ===== -->
-<div class="row g-4 mb-5">
-    <!-- CARD 1: PRODUKSI (BLUE) -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
-            <div style="height:6px;background:var(--primary);"></div>
-            <div class="card-body text-center" style="padding:28px 20px 24px;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:rgba(37,99,235,0.12);">
-                    <span style="font-size:26px;">🏭</span>
-                </div>
-                <div style="font-size:36px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
-                    <?= number_format($produksiHariIni) ?>
-                </div>
-                <div style="font-size:13px;color:var(--text-muted);font-weight:500;letter-spacing:0.3px;">
-                    PRODUKSI HARI INI
-                </div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
-                    Target: <?= number_format($targetHariIni) ?> batako
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CARD 2: STOK TERSEDIA (GREEN) -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
-            <div style="height:6px;background:var(--green);"></div>
-            <div class="card-body text-center" style="padding:28px 20px 24px;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:rgba(22,163,74,0.12);">
-                    <span style="font-size:26px;">📦</span>
-                </div>
-                <div style="font-size:36px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
-                    <?= number_format($totalStok) ?>
-                </div>
-                <div style="font-size:13px;color:var(--text-muted);font-weight:500;letter-spacing:0.3px;">
-                    STOK TERSEDIA
-                </div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
-                    Standar: <?= number_format($allStok['standar']) ?> | Besar: <?= number_format($allStok['besar']) ?>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CARD 3: PENDAPATAN (ORANGE) -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
-            <div style="height:6px;background:var(--orange);"></div>
-            <div class="card-body text-center" style="padding:28px 20px 24px;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:rgba(217,119,6,0.12);">
-                    <span style="font-size:26px;">💰</span>
-                </div>
-                <div style="font-size:28px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:6px;">
-                    <?= formatRupiah($pendapatanHariIni) ?>
-                </div>
-                <div style="font-size:13px;color:var(--text-muted);font-weight:500;letter-spacing:0.3px;">
-                    PENDAPATAN HARI INI
-                </div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
-                    Bulan ini: <?= formatRupiah($pendapatanBulanIni) ?>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CARD 4: PENGELUARAN (RED) -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
-            <div style="height:6px;background:var(--red);"></div>
-            <div class="card-body text-center" style="padding:28px 20px 24px;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-3"
-                     style="width:56px;height:56px;border-radius:16px;background:rgba(220,38,38,0.12);">
-                    <span style="font-size:26px;">💸</span>
-                </div>
-                <div style="font-size:28px;font-weight:800;color:var(--red);line-height:1.1;margin-bottom:6px;">
-                    <?= formatRupiah($pengeluaranHariIni) ?>
-                </div>
-                <div style="font-size:13px;color:var(--text-muted);font-weight:500;letter-spacing:0.3px;">
-                    PENGELUARAN HARI INI
-                </div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;opacity:0.7;">
-                    Operasional harian
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="stat-icon blue"><i class="bi bi-bricks"></i></div><div class="stat-label">Produksi hari ini</div><div class="stat-value"><?= number_format($produksiHariIni) ?></div><div class="stat-sub">Target: <?= number_format($targetHariIni) ?> batako</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="stat-icon green"><i class="bi bi-box-seam"></i></div><div class="stat-label">Stok tersedia</div><div class="stat-value"><?= number_format($totalStok) ?></div><div class="stat-sub">Standar <?= number_format($allStok['standar'] ?? 0) ?> · Besar <?= number_format($allStok['besar'] ?? 0) ?></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="stat-icon orange"><i class="bi bi-cash-coin"></i></div><div class="stat-label">Pendapatan hari ini</div><div class="stat-value stat-value-money"><?= formatRupiah($pendapatanHariIni) ?></div><div class="stat-sub">Dari transaksi penjualan hari ini</div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="stat-icon red"><i class="bi bi-receipt"></i></div><div class="stat-label">Pengeluaran hari ini</div><div class="stat-value stat-value-money"><?= formatRupiah($pengeluaranHariIni) ?></div><div class="stat-sub">Operasional dan kebutuhan harian</div></div></div>
 </div>
 
-<!-- ===== QUICK ACTION CARDS ===== -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <a href="input_bahan_baku.php" class="quick-card" style="padding:24px 20px;">
-            <div class="quick-icon blue" style="width:52px;height:52px;font-size:24px;margin-bottom:12px;">📦</div>
-            <h5 style="font-size:15px;">Input Bahan Baku</h5>
-            <p style="font-size:12px;">Catat penggunaan semen &amp; pasir harian</p>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="input_produksi.php" class="quick-card" style="padding:24px 20px;">
-            <div class="quick-icon green" style="width:52px;height:52px;font-size:24px;margin-bottom:12px;">🏭</div>
-            <h5 style="font-size:15px;">Input Produksi Harian</h5>
-            <p style="font-size:12px;">Input target &amp; realisasi produksi batako</p>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="input_penjualan.php" class="quick-card" style="padding:24px 20px;">
-            <div class="quick-icon orange" style="width:52px;height:52px;font-size:24px;margin-bottom:12px;">💰</div>
-            <h5 style="font-size:15px;">Input Penjualan</h5>
-            <p style="font-size:12px;">Catat transaksi penjualan batako</p>
-        </a>
-    </div>
+<div class="section-heading"><div><span class="eyebrow">Aksi cepat</span><h4>Catat aktivitas operasional</h4><p>Pilih jenis transaksi yang ingin dicatat. Setiap input memengaruhi ringkasan terkait secara otomatis.</p></div></div>
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3"><a href="input_bahan_baku.php" class="quick-card"><div class="quick-icon blue"><i class="bi bi-box-seam"></i></div><h5>Bahan Baku</h5><p>Catat pembelian atau penggunaan Semen dan Pasir.</p><span class="quick-link">Buka formulir <i class="bi bi-arrow-right"></i></span></a></div>
+    <div class="col-sm-6 col-xl-3"><a href="input_produksi.php" class="quick-card"><div class="quick-icon green"><i class="bi bi-bricks"></i></div><h5>Produksi Harian</h5><p>Input target, realisasi, bahan, dan pekerja.</p><span class="quick-link">Buka formulir <i class="bi bi-arrow-right"></i></span></a></div>
+    <div class="col-sm-6 col-xl-3"><a href="input_penjualan.php" class="quick-card"><div class="quick-icon orange"><i class="bi bi-cart-check"></i></div><h5>Penjualan</h5><p>Catat penjualan dan cek stok produk tersedia.</p><span class="quick-link">Buka formulir <i class="bi bi-arrow-right"></i></span></a></div>
+    <div class="col-sm-6 col-xl-3"><a href="input_pengeluaran.php" class="quick-card"><div class="quick-icon red"><i class="bi bi-wallet2"></i></div><h5>Pengeluaran</h5><p>Catat biaya operasional untuk laporan keuangan.</p><span class="quick-link">Buka formulir <i class="bi bi-arrow-right"></i></span></a></div>
 </div>
 
-<!-- ===== RECENT DATA TABLES ===== -->
-<div class="row g-3">
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>📦 Bahan Baku Terbaru</h5>
-                <a href="input_bahan_baku.php" style="font-size:12px;color:var(--primary);text-decoration:none;">Lihat Semua →</a>
-            </div>
-            <div class="card-body p-0">
-                <?php if (empty($recentBahan)): ?>
-                    <div class="p-3 text-muted text-center">Belum ada data.</div>
-                <?php else: ?>
-                <table class="table-custom">
-                    <tbody>
-                        <?php foreach ($recentBahan as $rb): ?>
-                        <tr>
-                            <td><span class="badge <?= $rb['jenis_bahan'] === 'Semen' ? 'badge-primary' : 'badge-warning' ?>"><?= e($rb['jenis_bahan']) ?></span></td>
-                            <td><strong><?= number_format($rb['jumlah']) ?></strong> <?= e($rb['satuan']) ?></td>
-                            <td class="text-end" style="font-size:11px;color:var(--text-muted);"><?= formatTanggal($rb['tanggal_penggunaan']) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>🏭 Produksi Terbaru</h5>
-                <a href="input_produksi.php" style="font-size:12px;color:var(--primary);text-decoration:none;">Lihat Semua →</a>
-            </div>
-            <div class="card-body p-0">
-                <?php if (empty($recentProduksi)): ?>
-                    <div class="p-3 text-muted text-center">Belum ada data.</div>
-                <?php else: ?>
-                <table class="table-custom">
-                    <tbody>
-                        <?php foreach ($recentProduksi as $rp): ?>
-                        <tr>
-                            <td><span class="badge badge-primary"><?= ucfirst($rp['ukuran_batako']) ?></span></td>
-                            <td><strong><?= number_format($rp['realisasi_produksi']) ?></strong>/<?= number_format($rp['target_produksi']) ?></td>
-                            <td class="text-end" style="font-size:11px;color:var(--text-muted);"><?= formatTanggal($rp['tanggal_produksi']) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>💰 Penjualan Terbaru</h5>
-                <a href="input_penjualan.php" style="font-size:12px;color:var(--primary);text-decoration:none;">Lihat Semua →</a>
-            </div>
-            <div class="card-body p-0">
-                <?php if (empty($recentPenjualan)): ?>
-                    <div class="p-3 text-muted text-center">Belum ada data.</div>
-                <?php else: ?>
-                <table class="table-custom">
-                    <tbody>
-                        <?php foreach ($recentPenjualan as $rpj): ?>
-                        <tr>
-                            <td><span class="badge badge-warning"><?= ucfirst($rpj['ukuran_batako']) ?></span></td>
-                            <td><strong><?= number_format($rpj['jumlah_terjual']) ?></strong> pcs</td>
-                            <td class="text-end" style="font-size:12px;font-weight:600;color:var(--green);"><?= formatRupiah($rpj['total_penjualan']) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
+<div class="section-heading"><div><span class="eyebrow">Aktivitas terakhir</span><h4>Transaksi terbaru</h4></div></div>
+<div class="row g-4">
+    <div class="col-lg-4"><div class="card activity-card"><div class="card-header"><h5><i class="bi bi-box-seam"></i> Bahan Baku</h5><a href="input_bahan_baku.php">Input <i class="bi bi-arrow-up-right"></i></a></div><div class="card-body p-0"><?php if (!$recentBahan): ?><div class="empty-state compact"><div class="empty-icon"><i class="bi bi-inbox"></i></div><p>Belum ada bahan baku.</p></div><?php else: ?><div class="activity-list"><?php foreach ($recentBahan as $row): ?><div class="activity-row"><span class="badge <?= $row['jenis_bahan'] === 'Semen' ? 'badge-primary' : 'badge-warning' ?>"><?= e($row['jenis_bahan']) ?></span><strong><?= number_format($row['jumlah']) ?> <?= e($row['satuan']) ?></strong><small><?= formatTanggal($row['tanggal_penggunaan']) ?></small></div><?php endforeach; ?></div><?php endif; ?></div></div></div>
+    <div class="col-lg-4"><div class="card activity-card"><div class="card-header"><h5><i class="bi bi-bricks"></i> Produksi</h5><a href="input_produksi.php">Input <i class="bi bi-arrow-up-right"></i></a></div><div class="card-body p-0"><?php if (!$recentProduksi): ?><div class="empty-state compact"><div class="empty-icon"><i class="bi bi-inbox"></i></div><p>Belum ada produksi.</p></div><?php else: ?><div class="activity-list"><?php foreach ($recentProduksi as $row): ?><div class="activity-row"><span class="badge badge-primary"><?= e(ucfirst($row['ukuran_batako'])) ?></span><strong><?= number_format($row['realisasi_produksi']) ?> <small>/ <?= number_format($row['target_produksi']) ?> pcs</small></strong><small><?= formatTanggal($row['tanggal_produksi']) ?></small></div><?php endforeach; ?></div><?php endif; ?></div></div></div>
+    <div class="col-lg-4"><div class="card activity-card"><div class="card-header"><h5><i class="bi bi-cart-check"></i> Penjualan</h5><a href="input_penjualan.php">Input <i class="bi bi-arrow-up-right"></i></a></div><div class="card-body p-0"><?php if (!$recentPenjualan): ?><div class="empty-state compact"><div class="empty-icon"><i class="bi bi-inbox"></i></div><p>Belum ada penjualan.</p></div><?php else: ?><div class="activity-list"><?php foreach ($recentPenjualan as $row): ?><div class="activity-row"><span class="badge badge-warning"><?= e(ucfirst($row['ukuran_batako'])) ?></span><strong><?= number_format($row['jumlah_terjual']) ?> pcs</strong><small><?= formatRupiah($row['total_penjualan']) ?></small></div><?php endforeach; ?></div><?php endif; ?></div></div></div>
 </div>
-
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
+<!-- ponytail: activity rows use existing 5-item queries; add dedicated activity timeline only when cross-module audit history is required. -->

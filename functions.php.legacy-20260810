@@ -108,6 +108,19 @@ function getAllStok(PDO $db): array {
 
 /**
  * Validasi pasangan jenis bahan + satuan.
+ * Semen wajib 'Sak', Pasir wajib 'm3'. Return null jika valid, pesan error jika tidak.
+ */
+function validasiSatuanBahan(string $jenis, string $satuan): ?string {
+    $jenis = $jenis === 'Semen' ? 'Semen' : 'Pasir';
+    $benar = ($jenis === 'Semen') ? 'Sak' : 'm3';
+    if ($satuan !== $benar) {
+        return "Satuan untuk $jenis harus '$benar', bukan '$satuan'.";
+    }
+    return null;
+}
+
+/**
+ * Validasi pasangan jenis bahan + satuan.
  * Hanya Semen/Sak atau Pasir/m3 yang diterima.
  */
 function validasiSatuanBahan(string $jenis, string $satuan): ?string {

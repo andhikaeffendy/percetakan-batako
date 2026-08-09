@@ -67,6 +67,18 @@ $stmt->execute(['besar']);
 echo "  ✓ Stok standar: 0\n";
 echo "  ✓ Stok besar: 0\n";
 
+$db->exec("TRUNCATE TABLE stok_bahan_baku");
+$stmt = $db->prepare("INSERT INTO stok_bahan_baku (jenis_bahan, jumlah, satuan, status) VALUES (?, 0, ?, 'Habis')");
+$stmt->execute(['Semen', 'Sak']);
+$stmt->execute(['Pasir', 'm3']);
+echo "  ✓ Stok bahan: Semen 0 Sak, Pasir 0 m3\n";
+
+$db->exec("TRUNCATE TABLE stok_produk");
+$stmt = $db->prepare("INSERT INTO stok_produk (ukuran_batako, jumlah_stok, status) VALUES (?, 0, 'Habis')");
+$stmt->execute(['standar']);
+$stmt->execute(['besar']);
+echo "  ✓ Stok produk: standar 0, besar 0\n";
+
 // 4. Contoh data produksi (7 hari terakhir)
 echo "\nMembuat contoh data produksi...\n";
 $db->exec("TRUNCATE TABLE produksi");
@@ -124,24 +136,34 @@ $stok = getAllStok($db);
 echo "  ✓ standar: stok={$stok['standar']}\n";
 echo "  ✓ besar: stok={$stok['besar']}\n";
 
-// 7. Contoh bahan baku
+// 7. Contoh bahan baku (pembelian + penggunaan)
 echo "\nMembuat contoh bahan baku...\n";
 $db->exec("TRUNCATE TABLE bahan_baku");
-$stmt = $db->prepare("INSERT INTO bahan_baku (tanggal_penggunaan, jenis_bahan, jumlah, satuan, keterangan, operator_id) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt = $db->prepare("INSERT INTO bahan_baku (tanggal_penggunaan, jenis_transaksi, jenis_bahan, jumlah, satuan, keterangan, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
 $contohBahan = [
-    ['2025-05-25', 'Semen', 35, 'Sak', 'Penggunaan harian', 2],
-    ['2025-05-25', 'Pasir', 8, 'm3', 'Penggunaan harian', 2],
-    ['2025-05-27', 'Semen', 35, 'Sak', 'Penggunaan harian', 2],
-    ['2025-05-27', 'Pasir', 8, 'm3', 'Penggunaan harian', 2],
-    ['2025-05-29', 'Semen', 35, 'Sak', 'Penggunaan harian', 2],
-    ['2025-05-29', 'Pasir', 8, 'm3', 'Penggunaan harian', 2],
-    ['2025-05-31', 'Semen', 32, 'Sak', 'Penggunaan harian', 2],
-    ['2025-05-31', 'Pasir', 7, 'm3', 'Penggunaan harian', 2],
+    ['2025-05-24', 'pembelian', 'Semen', 100, 'Sak', 'Pembelian awal', 2],
+    ['2025-05-24', 'pembelian', 'Pasir', 25, 'm3', 'Pembelian awal', 2],
+    ['2025-05-25', 'penggunaan', 'Semen', 35, 'Sak', 'Penggunaan harian', 2],
+    ['2025-05-25', 'penggunaan', 'Pasir', 8, 'm3', 'Penggunaan harian', 2],
+    ['2025-05-27', 'penggunaan', 'Semen', 35, 'Sak', 'Penggunaan harian', 2],
+    ['2025-05-27', 'penggunaan', 'Pasir', 8, 'm3', 'Penggunaan harian', 2],
+    ['2025-05-28', 'pembelian', 'Semen', 50, 'Sak', 'Pembelian tambahan', 2],
+    ['2025-05-29', 'penggunaan', 'Semen', 35, 'Sak', 'Penggunaan harian', 2],
+    ['2025-05-29', 'penggunaan', 'Pasir', 8, 'm3', 'Penggunaan harian', 2],
+    ['2025-05-31', 'penggunaan', 'Semen', 32, 'Sak', 'Penggunaan harian', 2],
+    ['2025-05-31', 'penggunaan', 'Pasir', 7, 'm3', 'Penggunaan harian', 2],
 ];
 foreach ($contohBahan as $b) {
     $stmt->execute($b);
 }
-echo "  ✓ " . count($contohBahan) . " data bahan baku\n";
+echo "  ✓ " . count($contohBahan) . " data bahan baku (pembelian + penggunaan)\n";
+
+// 7b. Sinkronkan stok bahan baku
+updateStokBahan($db);
+$stokBahan = $db->query("SELECT jenis_bahan, jumlah, status FROM stok_bahan_baku ORDER BY jenis_bahan")->fetchAll();
+foreach ($stokBahan as $sb) {
+    echo "  ✓ {$sb['jenis_bahan']}: {$sb['jumlah']} ({$sb['status']})\n";
+}
 
 // Aktifkan kembali FK checks
 $db->exec("SET FOREIGN_KEY_CHECKS = 1");

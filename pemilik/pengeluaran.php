@@ -80,21 +80,21 @@ include __DIR__ . '/../layouts/header.php';
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon red">💸</div>
+            <div class="stat-icon red"><i class="bi bi-wallet2"></i></div>
             <div class="stat-label">Total Pengeluaran</div>
             <div class="stat-value" style="font-size:18px;"><?= formatRupiah($summary['total']) ?></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon blue">🧾</div>
+            <div class="stat-icon blue"><i class="bi bi-receipt"></i></div>
             <div class="stat-label">Total Transaksi</div>
             <div class="stat-value"><?= number_format($totalRows) ?></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon orange">📌</div>
+            <div class="stat-icon orange"><i class="bi bi-tags"></i></div>
             <div class="stat-label">Kategori</div>
             <div class="stat-value" style="font-size:14px;"><?= count($kategoriList) ?> aktif</div>
         </div>
@@ -104,7 +104,7 @@ include __DIR__ . '/../layouts/header.php';
 <div class="card">
     <div class="card-header">
         <h5><i class="bi bi-cash-stack"></i> Data Pengeluaran</h5>
-        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalForm">
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalForm">
             <i class="bi bi-plus-lg"></i> Tambah Pengeluaran
         </button>
     </div>
@@ -178,7 +178,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <!-- Modal -->
 <div class="modal fade" id="modalForm" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form method="POST">
                 <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
@@ -211,7 +211,7 @@ include __DIR__ . '/../layouts/header.php';
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger">Simpan</button>
+                    <button type="submit" class="btn btn-primary">Simpan Data</button>
                 </div>
             </form>
         </div>

@@ -41,6 +41,7 @@ CREATE TABLE kategori_pengeluaran (
 CREATE TABLE bahan_baku (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tanggal_penggunaan DATE NOT NULL,
+    jenis_transaksi ENUM('pembelian','penggunaan') NOT NULL DEFAULT 'penggunaan',
     jenis_bahan ENUM('Semen','Pasir') NOT NULL,
     jumlah DECIMAL(10,2) NOT NULL,
     satuan ENUM('Sak','m3') NOT NULL,
@@ -113,13 +114,32 @@ CREATE TABLE gaji (
     FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 9. stok
+-- 9. stok (LEGACY — tidak dipakai lagi; digantikan stok_produk, dipertahankan agar tidak merusak skema lama)
 CREATE TABLE stok (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ukuran_batako ENUM('standar','besar') NOT NULL,
     total_produksi INT NOT NULL DEFAULT 0,
     total_penjualan INT NOT NULL DEFAULT 0,
     stok_tersedia INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 10. stok_bahan_baku (revisi dosen 17)
+CREATE TABLE stok_bahan_baku (
+    id_stok_bahan INT AUTO_INCREMENT PRIMARY KEY,
+    jenis_bahan ENUM('Semen','Pasir') NOT NULL UNIQUE,
+    jumlah DECIMAL(10,2) NOT NULL DEFAULT 0,
+    satuan ENUM('Sak','m3') NOT NULL,
+    status ENUM('Aman','Menipis','Habis') NOT NULL DEFAULT 'Habis',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 11. stok_produk (revisi dosen 17)
+CREATE TABLE stok_produk (
+    id_stok_produk INT AUTO_INCREMENT PRIMARY KEY,
+    ukuran_batako ENUM('standar','besar') NOT NULL UNIQUE,
+    jumlah_stok INT NOT NULL DEFAULT 0,
+    status ENUM('Aman','Menipis','Habis') NOT NULL DEFAULT 'Habis',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -144,3 +164,11 @@ INSERT INTO kategori_pengeluaran (nama_kategori, status) VALUES
 INSERT INTO stok (ukuran_batako, total_produksi, total_penjualan, stok_tersedia) VALUES
 ('standar', 0, 0, 0),
 ('besar', 0, 0, 0);
+
+INSERT INTO stok_bahan_baku (jenis_bahan, jumlah, satuan, status) VALUES
+('Semen', 0, 'Sak', 'Habis'),
+('Pasir', 0, 'm3', 'Habis');
+
+INSERT INTO stok_produk (ukuran_batako, jumlah_stok, status) VALUES
+('standar', 0, 'Habis'),
+('besar', 0, 'Habis');

@@ -46,18 +46,18 @@ Website operasional untuk **UMKM Percetakan Batako Maros, Ambon, Maluku** — me
 |---|-------|-----------|
 | 1 | **Login Multi-role** | Login dengan username/email + password, redirect otomatis sesuai role |
 | 2 | **Role Middleware** | Operator tidak bisa akses halaman Pemilik, dan sebaliknya |
-| 3 | **Dashboard KPI** | Produksi, Penjualan, Stok, Deviasi + grafik interaktif Chart.js |
-| 4 | **CRUD Lengkap** | Bahan Baku, Produksi, Penjualan, Tenaga Kerja |
-| 5 | **Stok Otomatis** | Dihitung dari total produksi − total penjualan secara real-time |
-| 6 | **Gaji Otomatis** | Total sak semen × tarif per sak per pekerja |
-| 7 | **Pengeluaran** | Catat pengeluaran operasional (listrik, air, dll) + laba bersih |
-| 8 | **Validasi Stok** | Penjualan tidak boleh melebihi stok tersedia |
-| 8 | **Laporan** | Produksi vs Penjualan, Keuangan, Gaji + Chart.js |
-| 9 | **PDF & Excel** | Cetak laporan PDF (Dompdf) + Export data Excel (PhpSpreadsheet) |
-| 10 | **Automated Tests** | 65 test scenarios — database integrity, business logic, helper functions |
-| 10 | **Responsive** | Nyaman di laptop/PC dan HP (Bootstrap 5) |
-| 11 | **Pagination + Filter** | Tabel dapat difilter tanggal/ukuran/search & dipaginasi |
-| 12 | **Flash Messages** | Notifikasi sukses/gagal setelah setiap aksi CRUD |
+| 3 | **Dashboard KPI** | Produksi, Penjualan, Stok, Pendapatan + grafik interaktif Chart.js |
+| 4 | **CRUD Lengkap** | Bahan Baku, Produksi, Penjualan, Tenaga Kerja, Pengeluaran |
+| 5 | **Stok Otomatis Produk** | Dihitung dari total produksi − total penjualan, disimpan di `stok_produk` |
+| 6 | **Stok Otomatis Bahan** | Pembelian − penggunaan bahan, disimpan di `stok_bahan_baku` (Semen dalam Sak, Pasir dalam m³) |
+| 7 | **Validasi Stok** | Penjualan tidak boleh melebihi stok tersedia |
+| 8 | **Gaji Otomatis** | Total sak semen × tarif per sak − panjar per pekerja, tersimpan per periode |
+| 9 | **Pengeluaran & Laba Bersih** | Catat pengeluaran operasional + kategori, hitung laba bersih |
+| 10 | **Laporan** | Produksi vs Penjualan, Keuangan, Gaji, Persediaan + Chart.js |
+| 11 | **PDF & Excel** | Cetak laporan PDF (Dompdf) + Export data Excel (PhpSpreadsheet) |
+| 12 | **Responsive** | Nyaman di laptop/PC dan HP (Bootstrap 5) |
+| 13 | **Pagination + Filter** | Tabel dapat difilter tanggal/ukuran/search & dipaginasi |
+| 14 | **Flash Messages** | Notifikasi sukses/gagal setelah setiap aksi CRUD |
 
 ---
 
@@ -80,32 +80,40 @@ Request → index.php (Router) → Halaman PHP (Controller Logic) → Layouts + 
 │           HELPERS (Fungsi)              │  ← Auth, Format, Stok, CSRF
 ├─────────────────────────────────────────┤
 │        CONFIG (Database + .env)         │  ← Koneksi & environment
+│        CONFIG (Database + .env)         │  ← Koneksi & environment
 ├─────────────────────────────────────────┤
-│        DATABASE (MySQL)                 │  ← 7 tabel relasional
+│        DATABASE (MySQL)                 │  ← 11 tabel relasional
+├─────────────────────────────────────────┤
+│        MIGRATIONS (SQL)                 │  ← Migrasi schema additive untuk DB existing
 └─────────────────────────────────────────┘
 ```
 
 ### Alur Data
 
 ```
-Operator Input → tabel produksi/penjualan → updateStok() → tabel stok
-                                          ↓
-Pemilik Dashboard ← tabel stok + produksi + penjualan (KPI + Chart.js)
-Pemilik Laporan   ← Produksi vs Penjualan, Keuangan, Gaji
-Pemilik Gaji      ← produksi.jumlah_sak_semen × pekerja.tarif_per_sak
+Operator Input → tabel produksi/penjualan/bahan_baku/pengeluaran → updateStok() / updateStokBahan()
+                                                                    ↓
+                                    stok_produk (produksi − penjualan) & stok_bahan_baku (pembelian − penggunaan)
+                                                                    ↓
+Pemilik Dashboard ← stok + produksi + penjualan + pengeluaran (KPI + Chart.js)
+Pemilik Laporan   ← Produksi vs Penjualan, Keuangan, Gaji, Persediaan
+Pemilik Gaji      ← produksi.jumlah_sak_semen × pekerja.tarif_per_sak − panjar
 ```
 
 ### Database Relasi
 
-```
+```text
 users ────┐
-           ├──→ bahan_baku (operator_id)
-           ├──→ produksi (operator_id) ──→ pekerja (pekerja_id)
-           ├──→ penjualan (operator_id)
-           └──→ (session login)
+          ├──→ bahan_baku (operator_id)
+          ├──→ produksi (operator_id) ──→ pekerja (pekerja_id)
+          ├──→ penjualan (operator_id)
+          ├──→ pengeluaran (operator_id, kategori_pengeluaran_id)
+          └──→ (session login)
 
 pekerja ──→ gaji (pekerja_id)
-stok    ←── produksi + penjualan (aggregate)
+stok_produk      ←── produksi + penjualan (aggregate per ukuran)
+stok_bahan_baku  ←── bahan_baku pembelian − penggunaan (per jenis)
+stok             ←── legacy (dijaga sinkron untuk kompatibilitas laporan lama)
 ```
 
 ---
@@ -120,12 +128,13 @@ stok    ←── produksi + penjualan (aggregate)
 | | Data Penjualan | CRUD lengkap + filter + validasi stok |
 | | Data Tenaga Kerja | CRUD + toggle status aktif/nonaktif |
 | | Data Pengeluaran | CRUD + filter kategori + total |
+| | Persediaan | Monitoring stok produk & bahan + grafik |
 | | Perhitungan Gaji | Hitung & simpan gaji per periode |
 | | Laporan Produksi | Grafik + tabel produksi vs penjualan + PDF |
 | | Laporan Keuangan | Total pendapatan + grafik bulanan + PDF |
 | | Laporan Gaji | Detail per pekerja + PDF |
 | **Operator** | Beranda | Ringkasan & quick action cards |
-| | Input Bahan Baku | Form input harian |
+| | Input Bahan Baku | Form input harian (pembelian/penggunaan) |
 | | Input Produksi | Form input harian |
 | | Input Penjualan | Form input harian + auto-hitung total |
 | | Input Pengeluaran | Form input harian (listrik, air, dll) |
@@ -278,13 +287,24 @@ copy .env.example .env
 
 ### Step 4: Buat Database
 
-Buka `http://localhost/phpmyadmin` -> tab SQL -> copy-paste isi `database.sql` -> Go.
+`database.sql` sudah berisi `CREATE DATABASE IF NOT EXISTS db_batako_maros` + `USE db_batako_maros`, jadi satu kali import langsung membuat database, tabel, dan data awal.
 
-Atau via CMD:
+**Cara A — via phpMyAdmin (paling mudah):**
+1. Buka `http://localhost/phpmyadmin`
+2. Klik tab **SQL** (tanpa memilih database apa pun)
+3. Klik **Choose File** -> pilih file `database.sql` dari folder project
+4. Klik **Go** / **Import**
+5. Verifikasi: di panel kiri phpMyAdmin harus muncul database `db_batako_maros` berisi 11 tabel
+
+**Cara B — via CMD (MySQL CLI):**
 ```cmd
 cd C:\xampp\htdocs\percetakan-batako
 mysql -u root < database.sql
 ```
+> Jika MySQL XAMPP Anda memakai password, tambahkan `-p` lalu ketik password: `mysql -u root -p < database.sql`
+> Verifikasi: `mysql -u root -e "SHOW TABLES FROM db_batako_maros;"` harus menampilkan 11 tabel.
+
+**Penting:** nama database di `.env` (`DB_NAME=db_batako_maros`) WAJIB sama persis dengan database hasil import. Jika Anda mengubah nama di `.env`, sesuaikan juga hasil import (atau buat DB dengan nama itu).
 
 ### Step 5: Seed Data
 
@@ -292,11 +312,37 @@ mysql -u root < database.sql
 php seeder.php
 ```
 
+Seeder membuat akun awal (pemilik & operator) dan contoh data. Jalankan **hanya pada instalasi baru** — jangan dijalankan pada database yang sudah berisi data produksi (seeder memakai `TRUNCATE` untuk beberapa tabel).
+
+Verifikasi berhasil: muncul pesan sukses tanpa error, lalu:
+```cmd
+mysql -u root -e "SELECT username, role FROM db_batako_maros.users;"
+```
+Harus menampilkan `pemilik` dan `operator`.
+
+> 💡 **Lewati Step 5 jika pakai `deploy_all.sql`** — file itu sudah berisi user + data awal. `deploy_all.sql` dipakai untuk deploy hosting (lihat bagian Deploy), bukan instal lokal.
+
 ### Step 6: Jalankan
 
-Buka browser -> `http://localhost/percetakan-batako`
+Ada dua cara menjalankan:
+
+**Cara A — Apache XAMPP (default, tanpa terminal tambahan):**
+1. Pastikan **Apache** dan **MySQL** menyala di XAMPP Control Panel
+2. Letakkan project di `C:\xampp\htdocs\percetakan-batako\`
+3. Buka browser -> `http://localhost/percetakan-batako`
+
+**Cara B — PHP Built-in Server (port 8000):**
+```cmd
+cd C:\xampp\htdocs\percetakan-batako
+php -S localhost:8000
+```
+Buka browser -> `http://localhost:8000`
+
+Kedua cara menghasilkan aplikasi yang sama. Pilih salah satu.
 
 Login: `pemilik` / `admin123` atau `operator` / `operator123`
+
+> 💡 **Alternatif Linux/macOS (tanpa XAMPP):** jalankan `./run-local.sh` — script otomatis membuat DB, menjalankan migrasi, mengisi seed, dan menyalakan server `http://localhost:8000`.
 
 ---
 
@@ -322,7 +368,7 @@ Login: `pemilik` / `admin123` atau `operator` / `operator123`
 | **Role** | Operator |
 | **Akses** | Input harian: Bahan Baku, Produksi, Penjualan |
 
-> 💡 Anda bisa login menggunakan **username** atau **email** — keduanya didukung.
+> ℹ️ **Struktur folder di atas = kondisi final repo.** Tidak ada file PHP/JS/CSS duplikat di root repo — semua halaman berada di `pemilik/`, `operator/`, dan `assets/`. Saat upload ke hosting, pastikan memakai file dari folder-folder ini, bukan file root lama.
 
 ---
 
@@ -334,8 +380,10 @@ umkm-percetakan-batako/
 ├── .gitignore                # File yang di-exclude dari Git
 ├── .htaccess                 # URL rewrite + security rules
 ├── composer.json             # PHP dependencies
-├── database.sql              # Struktur database (7 tabel)
+├── database.sql              # Struktur database lengkap (11 tabel, untuk instal lokal)
+├── deploy_all.sql            # Schema + data awal (untuk deploy hosting, 1 file)
 ├── seeder.php                # Seed data awal (users, contoh produksi, dll)
+├── run-local.sh              # Bootstrap lokal: buat DB + migrasi + jalankan server
 ├── index.php                 # Root redirect (cek session → arahkan)
 ├── login.php                 # Halaman login (username/email + password)
 ├── logout.php                # Destroy session → redirect login
@@ -345,7 +393,10 @@ umkm-percetakan-batako/
 │
 ├── helpers/
 │   ├── auth.php              # Auth (login, session, role, flash, format, XSS)
-│   └── functions.php         # Bisnis logic (updateStok, getStok, CSRF)
+│   └── functions.php         # Bisnis logic (updateStok, updateStokBahan, validasiSatuanBahan, CSRF)
+│
+├── migrations/
+│   └── revisi_persediaan.sql # Migrasi additive untuk DB existing (jenis_transaksi, stok_bahan_baku, stok_produk)
 │
 ├── layouts/
 │   ├── header.php            # HTML head + topbar + flash message
@@ -359,16 +410,19 @@ umkm-percetakan-batako/
 │   ├── produksi.php          # CRUD Produksi + filter + Excel/PDF export
 │   ├── penjualan.php         # CRUD Penjualan + validasi stok + auto-hitung
 │   ├── tenaga_kerja.php      # CRUD Pekerja + toggle status aktif/nonaktif
+│   ├── pengeluaran.php       # CRUD Pengeluaran + kategori
 │   ├── gaji.php              # Hitung gaji per periode + simpan ke DB
+│   ├── persediaan.php        # Monitoring stok produk & bahan + grafik
 │   ├── laporan_produksi.php  # Grafik + tabel produksi vs penjualan + PDF
 │   ├── laporan_keuangan.php  # Total pendapatan + grafik bulanan + PDF
 │   └── laporan_gaji.php      # Detail gaji per pekerja + PDF
 │
 ├── operator/                 # === HALAMAN OPERATOR ===
 │   ├── index.php             # Beranda + quick action cards + ringkasan
-│   ├── input_bahan_baku.php  # Form input bahan baku harian
+│   ├── input_bahan_baku.php  # Form input bahan baku harian (pembelian/penggunaan)
 │   ├── input_produksi.php    # Form input produksi + update stok otomatis
-│   └── input_penjualan.php   # Form input penjualan + validasi stok
+│   ├── input_penjualan.php   # Form input penjualan + validasi stok
+│   └── input_pengeluaran.php # Form input pengeluaran harian
 │
 ├── assets/
 │   ├── css/
@@ -377,7 +431,7 @@ umkm-percetakan-batako/
 │       └── app.js            # Sidebar toggle, auto-hitung, delete confirm
 │
 ├── tests/
-│   └── TestRunner.php         # Automated test suite (65 tests)
+│   └── TestRunner.php         # Automated test suite (assert-based, ~87 checks)
 └── vendor/                   # Composer dependencies (auto-generated)
 ```
 
@@ -400,41 +454,37 @@ umkm-percetakan-batako/
 
 ---
 
-## 🎨 Desain UI
+## 🎨 Desain UI — Industrial Soft UI (2026-08)
 
 | Komponen | Warna / Spesifikasi |
 |----------|---------------------|
-| Sidebar | Navy `#1E293B` |
-| Primary | Blue `#2563EB` |
-| Accent / Batako | Orange `#D97706` |
-| Success | Green `#16A34A` |
-| Danger / Delete | Red `#DC2626` |
-| Background | Soft gray `#F8FAFC` |
-| Cards | White `#FFFFFF` + shadow |
+| Background / Concrete | `#E8E3DA` |
+| Surface (card) | `#FFFFFF` |
+| Shadow lembut | `#B8B2A8` |
+| Teks / Ink | `#27313A` |
+| Primary (CTA, aksi utama) | Terracotta `#C65A32` |
+| Secondary / Info | Cobalt `#2F67C7` |
+| Success / Aman | `#287A5A` |
+| Warning / Menipis | `#B67A12` |
+| Danger / Habis / Delete | `#B84444` |
 | Font | **Inter** via Google Fonts |
 | Icons | **Bootstrap Icons** 1.11 |
+
+Prinsip:
+- Soft-neomorphism dipakai untuk hierarchy visual; CTA, input, focus state, tabel, dan status tetap high-contrast.
+- Tidak ada glass effect, gradient dekoratif, atau animasi berat.
+- Status tidak dibedakan hanya dengan warna (ada ikon/teks pendamping).
+- Semua modal create/edit memakai `modal-dialog-centered modal-dialog-scrollable`.
+- Merah hanya untuk aksi destruktif/error; CTA simpan/tambah memakai `btn-primary` terracotta.
+- Emoji tidak dipakai di UI — semua ikon memakai Bootstrap Icons.
 
 ---
 
 ## 🧪 Testing Checklist
 
-Semua 30 skenario sudah diuji dan PASS ✅. Lihat file `TESTING_CHECKLIST.md` untuk detail lengkap.
+Semua skenario di `TESTING_CHECKLIST.md` sudah diuji dan PASS ✅. Lihat file tersebut untuk detail lengkap (40+ skenario: login & auth, CRUD, stok otomatis, validasi, gaji, laporan, pengeluaran & laba bersih, export, UI desktop/mobile).
 
-| Modul | Jumlah Skenario | Status |
-|-------|----------------|--------|
-| Login & Auth | 6 | ✅ |
-| Operator Input | 3 | ✅ |
-| Stok Otomatis | 1 | ✅ |
-| Validasi | 1 | ✅ |
-| Pemilik Dashboard | 1 | ✅ |
-| Pemilik CRUD | 4 | ✅ |
-| Pemilik Gaji | 2 | ✅ |
-| Laporan | 3 | ✅ |
-| UI Desktop & Mobile | 2 | ✅ |
-| Filter & Pagination | 2 | ✅ |
-| Format & Flash | 2 | ✅ |
-| Delete Confirm & Auto | 2 | ✅ |
-| **Total** | **30** | ✅ |
+Suite otomatis `tests/TestRunner.php` berisi ~87 assertion checks untuk koneksi DB, struktur tabel, validasi seed, logika bisnis (stok, gaji, satuan bahan), foreign key, helper format, dan auth.
 
 ---
 
@@ -476,7 +526,7 @@ sudo systemctl restart apache2
 
 ### Jalankan Test Suite
 
-Proyek memiliki **65 automated tests** yang mencakup:
+Proyek memiliki **automated test suite** (`tests/TestRunner.php`, ~87 checks) yang mencakup:
 - Koneksi database & struktur tabel
 - Validasi data seed (users, pekerja, stok, produksi, penjualan)
 - Logika bisnis: perhitungan stok, validasi stok, perhitungan gaji
@@ -741,7 +791,7 @@ APP_ENV=production
 
 ---
 
-#### Step 5: Import Database + Seed Data
+#### Step 5: Import Database
 
 1. Di panel InfinityFree, klik **"phpMyAdmin"**
 2. Login dengan **DB_USER** dan **DB_PASS** dari Step 1
@@ -751,10 +801,13 @@ APP_ENV=production
    ```
 3. Setelah masuk, klik nama database di sidebar kiri (`epiz_XXXXX_batako_maros`)
 4. Klik tab **"SQL"** di toolbar atas
-5. Klik **"Choose File"** → pilih file **`database.sql`** dari folder project
+5. Klik **"Choose File"** → pilih file **`deploy_all.sql`** dari folder project
 6. Klik **"Go"** — tunggu query selesai
-7. **Ulangi** langkah 4-6 untuk file **`seed_production.sql`**
-8. ✅ Selesai! 7 tabel sudah terbuat + data awal sudah terisi
+7. ✅ Selesai! Seluruh tabel (users, pekerja, kategori_pengeluaran, bahan_baku, produksi, penjualan, pengeluaran, gaji, stok, stok_bahan_baku, stok_produk) sudah terbuat + data awal terisi
+
+> ⚠️ **Hanya 1 file: `deploy_all.sql`.** Jangan pakai `database.sql` di hosting — file itu berisi `CREATE DATABASE` yang tidak diizinkan InfinityFree.
+
+> **Database sudah ada (upgrade dari versi lama)?** Jangan import ulang (akan menimpa data). Cukup jalankan file `migrations/revisi_persediaan.sql` sekali di phpMyAdmin untuk menambah kolom `jenis_transaksi` pada `bahan_baku` serta tabel `stok_bahan_baku` dan `stok_produk`.
 
 ---
 
@@ -805,7 +858,9 @@ Folder `vendor/` sudah ada di laptop dari Step 2. Upload ke server:
 | **❌ 500 Internal Server Error** | File rusak / .htaccess error | Cek **Error Log** di panel InfinityFree |
 | **❌ Blank page putih** | Ada PHP error | Edit `index.php` → tambah baris 2: `ini_set('display_errors', 1);` |
 | **❌ "Koneksi database gagal"** | DB_HOST/DB_USER/DB_PASS salah | Cek file `.env` — pastikan cocok dengan data di panel MySQL |
-| **❌ Login gagal** | Password hash salah | Import ulang `seed_production.sql` via phpMyAdmin |
+| **❌ Login gagal** | Password hash salah | Import ulang `deploy_all.sql` via phpMyAdmin |
+| **❌ "Call to undefined function validasiSatuanBahan()"** | Helper `helpers/functions.php` versi lama ter-upload | Upload ulang `helpers/functions.php` terbaru (fitur stok bahan membutuhkannya) |
+| **❌ "Unknown column 'jenis_transaksi'" / tabel `stok_*` tidak ada** | DB masih versi lama | Jalankan `migrations/revisi_persediaan.sql` di phpMyAdmin |
 | **❌ CSS/JS berantakan** | APP_URL salah | Cek `APP_URL` di `.env` |
 | **❌ 404 halaman tidak ditemukan** | File belum terupload | Cek File Manager → folder `htdocs/` |
 | **❌ Class not found** | vendor/ belum terupload | Upload folder `vendor/` |

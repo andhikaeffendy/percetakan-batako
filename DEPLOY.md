@@ -68,7 +68,7 @@ Panduan ini berdasarkan pengalaman deploy nyata ke **InfinityFree** (gratis).
 2. Tab **SQL** → **Choose File** → pilih `deploy_all.sql`
 3. Klik **Go**
 
-> **Hanya 1 file.** `deploy_all.sql` berisi 7 tabel + data user + pekerja + stok.
+> **Hanya 1 file.** `deploy_all.sql` berisi schema lengkap (users, pekerja, kategori_pengeluaran, bahan_baku, produksi, penjualan, pengeluaran, gaji, stok, stok_bahan_baku, stok_produk) + data user + pekerja + stok. Fresh install cukup file ini; TIDAK perlu migrasi tambahan.
 
 ---
 
@@ -110,6 +110,19 @@ htdocs/
 ├── pemilik/laporan_produksi.php
 ├── pemilik/laporan_keuangan.php
 ├── pemilik/laporan_gaji.php
+├── pemilik/persediaan.php
+├── pemilik/input_bahan_baku.php
+├── dashboard.php
+├── input_bahan_baku.php
+├── persediaan.php
+├── laporan_keuangan.php
+├── laporan_produksi.php
+├── pengeluaran.php
+├── tenaga_kerja.php
+├── gaji.php
+├── functions.php
+├── seeder.php
+├── migrations/revisi_persediaan.sql
 ├── operator/index.php
 ├── operator/input_bahan_baku.php
 ├── operator/input_produksi.php
@@ -176,6 +189,41 @@ Login:
 | **404 Not Found** | File di subfolder | Pindahkan semua file ke `htdocs/` langsung |
 | **CSS/JS rusak** | APP_URL salah | Cek `APP_URL` di `.env` |
 | **phpMyAdmin blank** | Cache browser | Refresh halaman atau buka private window |
+
+---
+
+## 6b. Migrasi Database EXISTING (bukan fresh install)
+
+> Hanya untuk database yang **sudah ada** (mis. sudah pernah import `deploy_all.sql` versi lama).
+
+Jika upload source terbaru ke database lama, aplikasi bisa error saat create karena kolom/tabel persediaan belum ada. Jalankan **sekali**:
+
+1. phpMyAdmin → pilih database → tab **SQL**
+2. Buka file `migrations/revisi_persediaan.sql` → **Go**
+
+Isi migrasi:
+- Menambah kolom `jenis_transaksi` pada `bahan_baku` (default `penggunaan`).
+- Membuat tabel `stok_bahan_baku`.
+- Membuat tabel `stok_produk`.
+
+> ⚠️ **Backup database sebelum menjalankan migrasi.** File ini bersifat additive (tidak menghapus tabel), aman untuk data yang ada.
+
+---
+
+## 6c. Smoke Test Setelah Deploy
+
+Setelah upload source + DB siap, verifikasi CRUD cepat (login sebagai `pemilik`):
+
+| Aksi | Lokasi | Harapan |
+|------|--------|---------|
+| Input bahan baku (Semen/Sak) | `operator/input_bahan_baku.php` | Tersimpan tanpa error |
+| Input produksi | `operator/input_produksi.php` | Tersimpan tanpa error |
+| Input penjualan | `operator/input_penjualan.php` | Tersimpan tanpa error |
+| Input pengeluaran | `operator/input_pengeluaran.php` | Tersimpan tanpa error |
+| Tambah pekerja | `pemilik/tenaga_kerja.php` | Tersimpan tanpa error |
+| Hitung + Simpan Gaji | `pemilik/gaji.php` → Hitung → Simpan | Muncul pesan sukses, data tersimpan |
+
+Jika salah satu gagal: cek **PHP error log** (Panel → Error Log), pastikan helper `helpers/functions.php` ter-upload, dan jalankan migrasi pada langkah 6b.
 
 ---
 

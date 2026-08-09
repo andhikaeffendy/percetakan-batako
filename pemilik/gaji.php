@@ -9,8 +9,9 @@ $pageTitle = 'Perhitungan Gaji';
 
 $pekerjaAktif = $db->query("SELECT * FROM pekerja WHERE status = 'aktif' ORDER BY nama_pekerja")->fetchAll();
 
-$periodeAwal = $_GET['periode_awal'] ?? date('Y-m-01');
-$periodeAkhir = $_GET['periode_akhir'] ?? date('Y-m-d');
+$periodeAwal = $_POST['periode_awal'] ?? $_GET['periode_awal'] ?? date('Y-m-01');
+$periodeAkhir = $_POST['periode_akhir'] ?? $_GET['periode_akhir'] ?? date('Y-m-d');
+$harusHitung = isset($_GET['hitung']) || $_SERVER['REQUEST_METHOD'] === 'POST';
 
 $hasil = [];
 $totalSakKeseluruhan = 0;
@@ -18,7 +19,7 @@ $totalGajiKeseluruhan = 0;
 $totalPanjarKeseluruhan = 0;
 $panjarInput = $_POST['panjar'] ?? [];
 
-if (isset($_GET['hitung'])) {
+if ($harusHitung) {
     foreach ($pekerjaAktif as $pk) {
         $stmt = $db->prepare("SELECT 
             COALESCE(SUM(CASE WHEN p.ukuran_batako='standar' THEN p.realisasi_produksi ELSE 0 END), 0) as prod_standar,
@@ -49,21 +50,36 @@ if (isset($_GET['hitung'])) {
     }
 }
 
-// Simpan ke tabel gaji
+// Simpan ke tabel gaji. $hasil dihitung ulang dari POST di atas, bukan dari state GET yang hilang.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
-    $operatorId = $_SESSION['user_id'];
-    foreach ($hasil as $h) {
-        $stmt = $db->prepare("INSERT INTO gaji (pekerja_id, periode_awal, periode_akhir, total_sak_semen, tarif_per_sak, panjar, total_gaji, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$h['pekerja_id'], $periodeAwal, $periodeAkhir, $h['total_sak'], $h['tarif'], $h['panjar'], $h['total_gaji'], $operatorId]);
+    if (empty($hasil)) {
+        redirect('/pemilik/gaji.php?periode_awal=' . urlencode($periodeAwal) . '&periode_akhir=' . urlencode($periodeAkhir) . '&hitung=1', 'warning', 'Tidak ada pekerja aktif untuk disimpan.');
     }
-    redirect('/pemilik/gaji.php?periode_awal=' . $periodeAwal . '&periode_akhir=' . $periodeAkhir . '&hitung=1', 'success', 'Data gaji berhasil disimpan.');
+
+    $operatorId = $_SESSION['user_id'];
+    $stmt = $db->prepare("INSERT INTO gaji (pekerja_id, periode_awal, periode_akhir, total_sak_semen, tarif_per_sak, panjar, total_gaji, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $db->beginTransaction();
+    try {
+        foreach ($hasil as $h) {
+            $stmt->execute([$h['pekerja_id'], $periodeAwal, $periodeAkhir, $h['total_sak'], $h['tarif'], $h['panjar'], $h['total_gaji'], $operatorId]);
+        }
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollBack();
+        throw $e;
+    }
+
+    redirect('/pemilik/gaji.php?periode_awal=' . urlencode($periodeAwal) . '&periode_akhir=' . urlencode($periodeAkhir) . '&hitung=1', 'success', 'Data gaji berhasil disimpan.');
 }
 
 include __DIR__ . '/../layouts/header.php';
 ?>
 
+<div class="page-toolbar">
+    <div><h3>Perhitungan Gaji</h3><p>Hitung kompensasi pekerja berdasarkan pemakaian semen pada periode yang dipilih.</p></div>
+</div>
 <div class="card mb-4">
-    <div class="card-header"><h5><i class="bi bi-calculator"></i> Filter Periode Gaji</h5></div>
+    <div class="card-header"><h5><i class="bi bi-calendar-range"></i> Pilih Periode Perhitungan</h5></div>
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-3">
@@ -92,18 +108,20 @@ include __DIR__ . '/../layouts/header.php';
 
 <?php if (!empty($hasil)): ?>
 <form method="POST" id="formGaji">
+<input type="hidden" name="periode_awal" value="<?= e($periodeAwal) ?>">
+<input type="hidden" name="periode_akhir" value="<?= e($periodeAkhir) ?>">
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="stat-card"><div class="stat-icon blue">👷</div><div class="stat-label">Total Pekerja</div><div class="stat-value"><?= count($hasil) ?></div></div>
+        <div class="stat-card"><div class="stat-icon blue"><i class="bi bi-people"></i></div><div class="stat-label">Total Pekerja</div><div class="stat-value"><?= count($hasil) ?></div></div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card"><div class="stat-icon orange">🧱</div><div class="stat-label">Total Sak Semen</div><div class="stat-value"><?= number_format($totalSakKeseluruhan, 2) ?></div></div>
+        <div class="stat-card"><div class="stat-icon orange"><i class="bi bi-bricks"></i></div><div class="stat-label">Total Sak Semen</div><div class="stat-value"><?= number_format($totalSakKeseluruhan, 2) ?></div></div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card"><div class="stat-icon red">💸</div><div class="stat-label">Total Panjar</div><div class="stat-value" style="font-size:18px;"><?= formatRupiah($totalPanjarKeseluruhan) ?></div></div>
+        <div class="stat-card"><div class="stat-icon red"><i class="bi bi-wallet2"></i></div><div class="stat-label">Total Panjar</div><div class="stat-value" style="font-size:18px;"><?= formatRupiah($totalPanjarKeseluruhan) ?></div></div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card"><div class="stat-icon green">💵</div><div class="stat-label">Total Gaji Bersih</div><div class="stat-value" style="font-size:18px;"><?= formatRupiah($totalGajiKeseluruhan) ?></div></div>
+        <div class="stat-card"><div class="stat-icon green"><i class="bi bi-cash-stack"></i></div><div class="stat-label">Total Gaji Bersih</div><div class="stat-value" style="font-size:18px;"><?= formatRupiah($totalGajiKeseluruhan) ?></div></div>
     </div>
 </div>
 

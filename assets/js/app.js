@@ -50,7 +50,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tanggal hari ini sebagai default
     document.querySelectorAll('.date-today').forEach(el => {
         if (!el.value) {
-            el.value = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            el.value = localDate.toISOString().split('T')[0];
         }
     });
 });

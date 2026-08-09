@@ -92,8 +92,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 include __DIR__ . '/../layouts/header.php';
 ?>
 
+<div class="page-toolbar">
+    <div><h3>Laporan Gaji</h3><p>Tinjau pembayaran pekerja berdasarkan periode produksi yang dipilih.</p></div>
+</div>
 <div class="card mb-4">
-    <div class="card-header"><h5><i class="bi bi-funnel"></i> Filter Laporan Gaji</h5></div>
+    <div class="card-header"><h5><i class="bi bi-sliders"></i> Periode &amp; Ekspor Laporan</h5></div>
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-3">
@@ -119,21 +122,21 @@ include __DIR__ . '/../layouts/header.php';
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon blue">👷</div>
+            <div class="stat-icon blue"><i class="bi bi-people"></i></div>
             <div class="stat-label">Total Pekerja</div>
             <div class="stat-value"><?= count($detail) ?></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon orange">🧱</div>
+            <div class="stat-icon orange"><i class="bi bi-bricks"></i></div>
             <div class="stat-label">Total Sak Semen</div>
             <div class="stat-value"><?= number_format($totalSakKeseluruhan, 2) ?></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon green">💵</div>
+            <div class="stat-icon green"><i class="bi bi-cash-stack"></i></div>
             <div class="stat-label">Total Gaji</div>
             <div class="stat-value" style="font-size:18px;"><?= formatRupiah($totalGajiKeseluruhan) ?></div>
         </div>
@@ -155,14 +158,16 @@ include __DIR__ . '/../layouts/header.php';
                         <td><strong><?= e($d['nama_pekerja']) ?></strong></td>
                         <td><?= number_format($d['total_sak_semen'], 2) ?></td>
                         <td><?= formatRupiah($d['tarif_per_sak']) ?></td>
-                        <td><strong style="color:var(--green);"><?= formatRupiah($d['total_gaji']) ?></strong></td>
+                        <td><?= formatRupiah($d['panjar']) ?></td>
+                        <td><strong class="text-success-emphasis"><?= formatRupiah($d['total_gaji']) ?></strong></td>
                     </tr>
                     <?php endforeach; ?>
                     <tr style="background:var(--background);font-weight:700;">
                         <td colspan="2" class="text-end">TOTAL</td>
                         <td><?= number_format($totalSakKeseluruhan, 2) ?></td>
                         <td></td>
-                        <td style="color:var(--green);"><?= formatRupiah($totalGajiKeseluruhan) ?></td>
+                        <td></td>
+                        <td><strong class="text-success-emphasis"><?= formatRupiah($totalGajiKeseluruhan) ?></strong></td>
                     </tr>
                 </tbody>
             </table>

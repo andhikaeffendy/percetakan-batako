@@ -293,7 +293,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <!-- Modal Form -->
 <div class="modal fade" id="modalForm" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form method="POST">
                 <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">

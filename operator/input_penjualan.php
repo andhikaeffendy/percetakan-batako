@@ -11,12 +11,8 @@ $today = date('Y-m-d');
 $success = false;
 $stokWarning = '';
 
-// Get stok
-$stmt = $db->query("SELECT ukuran_batako, stok_tersedia FROM stok");
-$stokData = [];
-foreach ($stmt->fetchAll() as $s) {
-    $stokData[$s['ukuran_batako']] = $s['stok_tersedia'];
-}
+// Get stok (dari stok_produk — canonical)
+$stokData = getAllStok($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tanggal = $_POST['tanggal_penjualan'];
@@ -43,10 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="row g-3">
+<div class="page-toolbar">
+    <div><h3>Input Penjualan</h3><p>Catat transaksi penjualan. Stok produk akan diperbarui setelah transaksi tersimpan.</p></div>
+</div>
+<div class="row g-4">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header"><h5><i class="bi bi-cart-check"></i> Form Input Penjualan</h5></div>
+        <div class="card form-workspace">
+            <div class="card-header"><h5><i class="bi bi-cart-check"></i> Detail Transaksi</h5></div>
             <div class="card-body">
                 <?php if ($success): ?>
                 <div class="alert alert-success"><i class="bi bi-check-circle"></i> Transaksi penjualan berhasil disimpan! Stok otomatis berkurang.</div>
@@ -97,7 +96,7 @@ include __DIR__ . '/../layouts/header.php';
                             </div>
                         </div>
                         <div class="col-12">
-                            <button type="submit" class="btn btn-warning btn-lg" style="color:white;">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 w-md-auto">
                                 <i class="bi bi-save"></i> Simpan Penjualan
                             </button>
                         </div>
@@ -108,7 +107,7 @@ include __DIR__ . '/../layouts/header.php';
     </div>
     <div class="col-lg-4">
         <div class="card mb-3">
-            <div class="card-header"><h5>📦 Stok Saat Ini</h5></div>
+            <div class="card-header"><h5><i class="bi bi-box-seam"></i> Stok Saat Ini</h5></div>
             <div class="card-body">
                 <div class="mb-3">
                     <small style="color:var(--text-muted);">Batako Standar</small>
@@ -121,7 +120,7 @@ include __DIR__ . '/../layouts/header.php';
             </div>
         </div>
         <div class="card">
-            <div class="card-header"><h5>📊 Ringkasan Hari Ini</h5></div>
+            <div class="card-header"><h5><i class="bi bi-bars"></i> Ringkasan Hari Ini</h5></div>
             <div class="card-body">
                 <?php
                 $stmt = $db->prepare("SELECT COALESCE(SUM(jumlah_terjual), 0) as terjual, COALESCE(SUM(total_penjualan), 0) as pendapatan, COUNT(*) as transaksi FROM penjualan WHERE tanggal_penjualan = ?");

@@ -2,6 +2,7 @@
 // pemilik/bahan_baku.php — CRUD Bahan Baku (Pemilik)
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/auth.php';
+require_once __DIR__ . '/../helpers/functions.php';
 requireRole('pemilik');
 
 $db = getDB();
@@ -12,6 +13,7 @@ $today = date('Y-m-d');
 if (isset($_GET['delete'])) {
     $stmt = $db->prepare("DELETE FROM bahan_baku WHERE id = ?");
     $stmt->execute([$_GET['delete']]);
+    updateStokBahan($db);
     redirect('/pemilik/bahan_baku.php', 'success', 'Data bahan baku berhasil dihapus.');
 }
 
@@ -19,19 +21,29 @@ if (isset($_GET['delete'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = $_POST['id'] ?? null;
     $tanggal = $_POST['tanggal_penggunaan'];
+    $jenisTransaksi = ($_POST['jenis_transaksi'] ?? 'penggunaan') === 'pembelian' ? 'pembelian' : 'penggunaan';
     $jenis = $_POST['jenis_bahan'];
     $jumlah = $_POST['jumlah'];
     $satuan = $_POST['satuan'];
     $keterangan = $_POST['keterangan'] ?? '';
     $operatorId = $_SESSION['user_id'];
 
+    // Validasi backend: Semen wajib Sak, Pasir wajib m3
+    $errSatuan = validasiSatuanBahan((string)$jenis, (string)$satuan);
+    if ($errSatuan) {
+        redirect('/pemilik/bahan_baku.php', 'error', $errSatuan);
+    }
+
     if ($id) {
-        $stmt = $db->prepare("UPDATE bahan_baku SET tanggal_penggunaan=?, jenis_bahan=?, jumlah=?, satuan=?, keterangan=?, operator_id=? WHERE id=?");
-        $stmt->execute([$tanggal, $jenis, $jumlah, $satuan, $keterangan, $operatorId, $id]);
+        $stmt = $db->prepare("UPDATE bahan_baku SET tanggal_penggunaan=?, jenis_transaksi=?, jenis_bahan=?, jumlah=?, satuan=?, keterangan=?, operator_id=? WHERE id=?");
+        $stmt->execute([$tanggal, $jenisTransaksi, $jenis, $jumlah, $satuan, $keterangan, $operatorId, $id]);
+        // Hitung ulang SEMUA jenis bahan (lama + baru) agar stok tidak stale saat edit lintas jenis
+        updateStokBahan($db);
         redirect('/pemilik/bahan_baku.php', 'success', 'Data bahan baku berhasil diperbarui.');
     } else {
-        $stmt = $db->prepare("INSERT INTO bahan_baku (tanggal_penggunaan, jenis_bahan, jumlah, satuan, keterangan, operator_id) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$tanggal, $jenis, $jumlah, $satuan, $keterangan, $operatorId]);
+        $stmt = $db->prepare("INSERT INTO bahan_baku (tanggal_penggunaan, jenis_transaksi, jenis_bahan, jumlah, satuan, keterangan, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$tanggal, $jenisTransaksi, $jenis, $jumlah, $satuan, $keterangan, $operatorId]);
+        updateStokBahan($db, $jenis);
         redirect('/pemilik/bahan_baku.php', 'success', 'Data bahan baku berhasil disimpan.');
     }
 }
@@ -39,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Filters
 $filterTanggal = $_GET['tanggal'] ?? '';
 $filterJenis = $_GET['jenis'] ?? '';
+$filterTransaksi = $_GET['transaksi'] ?? '';
 $search = $_GET['search'] ?? '';
 
 // Pagination
@@ -51,6 +64,7 @@ $where = "WHERE 1=1";
 $params = [];
 if ($filterTanggal) { $where .= " AND b.tanggal_penggunaan = ?"; $params[] = $filterTanggal; }
 if ($filterJenis) { $where .= " AND b.jenis_bahan = ?"; $params[] = $filterJenis; }
+if ($filterTransaksi) { $where .= " AND b.jenis_transaksi = ?"; $params[] = $filterTransaksi; }
 if ($search) { $where .= " AND (b.jenis_bahan LIKE ? OR b.keterangan LIKE ?)"; $params[] = "%$search%"; $params[] = "%$search%"; }
 
 $countStmt = $db->prepare("SELECT COUNT(*) FROM bahan_baku b $where");
@@ -95,14 +109,21 @@ include __DIR__ . '/../layouts/header.php';
                     <option value="Pasir" <?= $filterJenis === 'Pasir' ? 'selected' : '' ?>>Pasir</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <select name="transaksi" class="form-select form-select-sm">
+                    <option value="">Semua Transaksi</option>
+                    <option value="pembelian" <?= $filterTransaksi === 'pembelian' ? 'selected' : '' ?>>Pembelian</option>
+                    <option value="penggunaan" <?= $filterTransaksi === 'penggunaan' ? 'selected' : '' ?>>Penggunaan</option>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <input type="text" name="search" class="form-control form-control-sm" value="<?= e($search) ?>" placeholder="Cari...">
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-light btn-sm w-100"><i class="bi bi-funnel"></i> Filter</button>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-light btn-sm w-100"><i class="bi bi-funnel"></i></button>
             </div>
-            <?php if ($filterTanggal || $filterJenis || $search): ?>
-            <div class="col-md-2">
+            <?php if ($filterTanggal || $filterJenis || $filterTransaksi || $search): ?>
+            <div class="col-md-1">
                 <a href="bahan_baku.php" class="btn btn-outline-primary btn-sm w-100">Reset</a>
             </div>
             <?php endif; ?>
@@ -115,6 +136,7 @@ include __DIR__ . '/../layouts/header.php';
                     <tr>
                         <th>No</th>
                         <th>Tanggal</th>
+                        <th>Jenis Transaksi</th>
                         <th>Jenis Bahan</th>
                         <th>Jumlah</th>
                         <th>Satuan</th>
@@ -125,12 +147,19 @@ include __DIR__ . '/../layouts/header.php';
                 </thead>
                 <tbody>
                     <?php if (empty($dataList)): ?>
-                    <tr><td colspan="8" class="text-center text-muted py-4">Tidak ada data bahan baku.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data bahan baku.</td></tr>
                     <?php else: ?>
                     <?php foreach ($dataList as $i => $row): ?>
                     <tr>
                         <td><?= $offset + $i + 1 ?></td>
                         <td><?= formatTanggal($row['tanggal_penggunaan']) ?></td>
+                        <td>
+                            <?php if (($row['jenis_transaksi'] ?? 'penggunaan') === 'pembelian'): ?>
+                            <span class="badge badge-success">Pembelian</span>
+                            <?php else: ?>
+                            <span class="badge badge-warning">Penggunaan</span>
+                            <?php endif; ?>
+                        </td>
                         <td><span class="badge <?= $row['jenis_bahan'] === 'Semen' ? 'badge-primary' : 'badge-warning' ?>"><?= e($row['jenis_bahan']) ?></span></td>
                         <td><?= number_format($row['jumlah'], 2) ?></td>
                         <td><?= e($row['satuan']) ?></td>
@@ -152,7 +181,7 @@ include __DIR__ . '/../layouts/header.php';
         <div class="pagination-wrapper">
             <span>Menampilkan <?= $offset + 1 ?>-<?= min($offset + $perPage, $totalRows) ?> dari <?= $totalRows ?> data</span>
             <ul class="pagination">
-                <?php $qp = http_build_query(array_filter(['tanggal' => $filterTanggal, 'jenis' => $filterJenis, 'search' => $search])); ?>
+                <?php $qp = http_build_query(array_filter(['tanggal' => $filterTanggal, 'jenis' => $filterJenis, 'transaksi' => $filterTransaksi, 'search' => $search])); ?>
                 <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="?<?= $qp ?>&page=<?= $page-1 ?>">«</a></li>
                 <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                 <li class="page-item <?= $p === $page ? 'active' : '' ?>"><a class="page-link" href="?<?= $qp ?>&page=<?= $p ?>"><?= $p ?></a></li>
@@ -166,7 +195,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <!-- Modal Form -->
 <div class="modal fade" id="modalForm" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form method="POST">
                 <input type="hidden" name="id" id="editId" value="<?= $editItem['id'] ?? '' ?>">
@@ -176,8 +205,15 @@ include __DIR__ . '/../layouts/header.php';
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label">Tanggal Penggunaan</label>
+                        <label class="form-label">Tanggal Transaksi</label>
                         <input type="date" name="tanggal_penggunaan" class="form-control date-today" value="<?= e($editItem['tanggal_penggunaan'] ?? $today) ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jenis Transaksi</label>
+                        <select name="jenis_transaksi" class="form-select" required>
+                            <option value="pembelian" <?= ($editItem['jenis_transaksi'] ?? '') === 'pembelian' ? 'selected' : '' ?>>Pembelian (stok masuk)</option>
+                            <option value="penggunaan" <?= ($editItem['jenis_transaksi'] ?? 'penggunaan') === 'penggunaan' ? 'selected' : '' ?>>Penggunaan (stok keluar)</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Jenis Bahan</label>

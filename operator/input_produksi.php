@@ -32,10 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="row g-3">
+<div class="page-toolbar">
+    <div><h3>Input Produksi</h3><p>Catat target, realisasi, bahan yang digunakan, dan pekerja untuk hari ini.</p></div>
+</div>
+<div class="row g-4">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header"><h5><i class="bi bi-building"></i> Form Input Produksi Harian</h5></div>
+        <div class="card form-workspace">
+            <div class="card-header"><h5><i class="bi bi-bricks"></i> Detail Produksi Harian</h5></div>
             <div class="card-body">
                 <?php if ($success): ?>
                 <div class="alert alert-success"><i class="bi bi-check-circle"></i> Data produksi harian berhasil disimpan! Stok otomatis diperbarui.</div>
@@ -88,7 +91,7 @@ include __DIR__ . '/../layouts/header.php';
                             </div>
                         </div>
                         <div class="col-12">
-                            <button type="submit" class="btn btn-success btn-lg">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 w-md-auto">
                                 <i class="bi bi-save"></i> Simpan Produksi
                             </button>
                         </div>
@@ -99,7 +102,7 @@ include __DIR__ . '/../layouts/header.php';
     </div>
     <div class="col-lg-4">
         <div class="card mb-3">
-            <div class="card-header"><h5>📊 Ringkasan Cepat</h5></div>
+            <div class="card-header"><h5><i class="bi bi-bars"></i> Ringkasan Cepat</h5></div>
             <div class="card-body">
                 <?php
                 $stmt = $db->prepare("SELECT COALESCE(SUM(realisasi_produksi), 0) as prod, COALESCE(SUM(target_produksi), 0) as target FROM produksi WHERE tanggal_produksi = ?");
@@ -122,7 +125,7 @@ include __DIR__ . '/../layouts/header.php';
             </div>
         </div>
         <div class="card">
-            <div class="card-header"><h5>📋 Informasi</h5></div>
+            <div class="card-header"><h5><i class="bi bi-info-circle"></i> Informasi</h5></div>
             <div class="card-body">
                 <p style="font-size:13px;color:var(--text-muted);">Input data produksi harian sesuai ukuran batako. Stok otomatis bertambah.</p>
             </div>

@@ -29,12 +29,12 @@
     <!-- TOPBAR -->
     <div class="topbar">
         <div class="d-flex align-items-center gap-2">
-            <button class="mobile-toggle">☰</button>
+            <button class="mobile-toggle"><i class="bi bi-list"></i></button>
             <h4 class="page-title"><?= e($pageTitle ?? 'Dashboard') ?></h4>
         </div>
         <div class="user-info">
             <div class="text-end d-none d-sm-block">
-                <div style="font-weight:600;font-size:13px;"><?= e($_SESSION['name'] ?? 'User') ?></div>
+                <div class="user-name"><?= e($_SESSION['name'] ?? 'User') ?></div>
                 <div class="user-role"><?= e(strtoupper($_SESSION['role'] ?? '')) ?></div>
             </div>
             <div class="user-avatar">

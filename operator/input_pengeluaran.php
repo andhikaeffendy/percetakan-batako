@@ -30,10 +30,13 @@ $ringkasan = $stmt->fetch();
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="row g-3">
+<div class="page-toolbar">
+    <div><h3>Input Pengeluaran</h3><p>Catat biaya operasional agar laporan keuangan mencerminkan kondisi aktual.</p></div>
+</div>
+<div class="row g-4">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header"><h5><i class="bi bi-cash-stack"></i> Form Input Pengeluaran</h5></div>
+        <div class="card form-workspace">
+            <div class="card-header"><h5><i class="bi bi-wallet2"></i> Detail Pengeluaran</h5></div>
             <div class="card-body">
                 <?php if ($success): ?>
                 <div class="alert alert-success"><i class="bi bi-check-circle"></i> Data pengeluaran berhasil disimpan!</div>
@@ -70,7 +73,7 @@ include __DIR__ . '/../layouts/header.php';
                             </div>
                         </div>
                         <div class="col-12">
-                            <button type="submit" class="btn btn-danger btn-lg">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 w-md-auto">
                                 <i class="bi bi-save"></i> Simpan Pengeluaran
                             </button>
                         </div>
@@ -81,7 +84,7 @@ include __DIR__ . '/../layouts/header.php';
     </div>
     <div class="col-lg-4">
         <div class="card mb-3">
-            <div class="card-header"><h5>💸 Ringkasan Hari Ini</h5></div>
+            <div class="card-header"><h5><i class="bi bi-wallet2"></i> Ringkasan Hari Ini</h5></div>
             <div class="card-body">
                 <div class="mb-3">
                     <small style="color:var(--text-muted);">Total Pengeluaran</small>
