@@ -15,6 +15,7 @@ $stokWarning = '';
 $stokData = getAllStok($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/input_penjualan.php');
     $tanggal = $_POST['tanggal_penjualan'];
     $ukuran = $_POST['ukuran_batako'];
     $jumlah = $_POST['jumlah_terjual'];
@@ -22,6 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total = $jumlah * $harga;
     $pembeli = $_POST['nama_pembeli'] ?? null;
     $operatorId = $_SESSION['user_id'];
+
+    $error = null;
+    if ($tanggal === '' || !strtotime($tanggal)) { $error = 'Tanggal tidak valid.'; }
+    elseif (!in_array($ukuran, ['standar', 'besar'], true)) { $error = 'Ukuran batako tidak valid.'; }
+    elseif (!is_numeric($jumlah) || (float)$jumlah <= 0) { $error = 'Jumlah terjual harus angka positif.'; }
+    elseif (!is_numeric($harga) || (float)$harga <= 0) { $error = 'Harga satuan harus angka positif.'; }
+    if ($error) { $stokWarning = $error; }
 
     // Cek stok
     $stokTersedia = $stokData[$ukuran] ?? 0;
@@ -54,6 +62,7 @@ include __DIR__ . '/../layouts/header.php';
                 <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> <?= $stokWarning ?></div>
                 <?php endif; ?>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="form-group">

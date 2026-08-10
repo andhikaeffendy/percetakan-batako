@@ -7,30 +7,58 @@ requireRole('pemilik');
 $db = getDB();
 $pageTitle = 'Data Tenaga Kerja';
 
-// Delete
-if (isset($_GET['delete'])) {
+// Delete (POST)
+$deleteId = 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_method'] ?? '') === 'delete') {
+    requireCsrf('/pemilik/tenaga_kerja.php');
+    $deleteId = (int)($_POST['id'] ?? 0);
+}
+if ($deleteId > 0) {
     $stmt = $db->prepare("DELETE FROM pekerja WHERE id = ?");
-    $stmt->execute([$_GET['delete']]);
-    redirect('/pemilik/tenaga_kerja.php', 'success', 'Data pekerja berhasil dihapus.');
+    $stmt->execute([$deleteId]);
+    if ($stmt->rowCount() > 0) {
+        redirect('/pemilik/tenaga_kerja.php', 'success', 'Data pekerja berhasil dihapus.');
+    }
+    redirect('/pemilik/tenaga_kerja.php', 'warning', 'Data pekerja tidak ditemukan.');
 }
 
-// Toggle status
-if (isset($_GET['toggle'])) {
+// Toggle status (POST)
+$toggleId = 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_method'] ?? '') === 'toggle') {
+    requireCsrf('/pemilik/tenaga_kerja.php');
+    $toggleId = (int)($_POST['id'] ?? 0);
+}
+if ($toggleId > 0) {
     $stmt = $db->prepare("UPDATE pekerja SET status = CASE WHEN status='aktif' THEN 'nonaktif' ELSE 'aktif' END WHERE id = ?");
-    $stmt->execute([$_GET['toggle']]);
-    redirect('/pemilik/tenaga_kerja.php', 'success', 'Status pekerja berhasil diubah.');
+    $stmt->execute([$toggleId]);
+    if ($stmt->rowCount() > 0) {
+        redirect('/pemilik/tenaga_kerja.php', 'success', 'Status pekerja berhasil diubah.');
+    }
+    redirect('/pemilik/tenaga_kerja.php', 'warning', 'Data pekerja tidak ditemukan.');
 }
 
 // Create/Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = $_POST['id'] ?? null;
+    requireCsrf('/tenaga_kerja.php');
+    $rawId = trim((string)($_POST['id'] ?? ''));
+    if ($rawId !== '' && !ctype_digit($rawId)) {
+        redirect('/pemilik/tenaga_kerja.php', 'warning', 'Data tidak valid.');
+    }
+    $id = $rawId === '' ? 0 : (int)$rawId;
     $nama = $_POST['nama_pekerja'];
     $tarif = $_POST['tarif_per_sak'];
-    $status = $_POST['status'] ?? 'aktif';
+    $status = in_array($_POST['status'] ?? 'aktif', ['aktif', 'nonaktif'], true) ? $_POST['status'] : 'aktif';
 
     if ($id) {
         $stmt = $db->prepare("UPDATE pekerja SET nama_pekerja=?, tarif_per_sak=?, status=? WHERE id=?");
         $stmt->execute([$nama, $tarif, $status, $id]);
+        if ($stmt->rowCount() === 0) {
+            $chk = $db->prepare("SELECT 1 FROM pekerja WHERE id = ?");
+            $chk->execute([$id]);
+            if (!$chk->fetchColumn()) {
+                redirect('/pemilik/tenaga_kerja.php', 'warning', 'Data pekerja tidak ditemukan.');
+            }
+        }
         redirect('/pemilik/tenaga_kerja.php', 'success', 'Data pekerja berhasil diperbarui.');
     } else {
         $stmt = $db->prepare("INSERT INTO pekerja (nama_pekerja, tarif_per_sak, status) VALUES (?, ?, ?)");
@@ -47,8 +75,11 @@ $nonaktifPekerja = $totalPekerja - $aktifPekerja;
 $editItem = null;
 if (isset($_GET['edit'])) {
     $stmt = $db->prepare("SELECT * FROM pekerja WHERE id = ?");
-    $stmt->execute([$_GET['edit']]);
+    $stmt->execute([(int)$_GET['edit']]);
     $editItem = $stmt->fetch();
+    if (!$editItem) {
+        redirect('/pemilik/tenaga_kerja.php', 'warning', 'Data pekerja tidak ditemukan.');
+    }
 }
 
 function inisialNama(string $nama): string {
@@ -70,7 +101,7 @@ include __DIR__ . '/../layouts/header.php';
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
         <span class="hero-date"><i class="bi bi-person-workspace"></i> <?= $aktifPekerja ?> aktif dari <?= $totalPekerja ?> pekerja</span>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalForm" data-mode="tambah">
+        <button class="btn btn-primary" onclick="window.location.href='tenaga_kerja.php'" data-mode="tambah">
             <i class="bi bi-plus-lg"></i> Tambah Pekerja
         </button>
     </div>
@@ -125,7 +156,7 @@ include __DIR__ . '/../layouts/header.php';
                 <div class="empty-icon"><i class="bi bi-person-plus"></i></div>
                 <h5>Belum ada pekerja</h5>
                 <p>Tambahkan pekerja pertama untuk mulai mencatat produksi dan gaji.</p>
-                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalForm" data-mode="tambah">
+                <button class="btn btn-primary btn-sm" onclick="window.location.href='tenaga_kerja.php'" data-mode="tambah">
                     <i class="bi bi-plus-lg"></i> Tambah Pekerja
                 </button>
             </div>
@@ -161,18 +192,28 @@ include __DIR__ . '/../layouts/header.php';
                             <div style="font-size:11px;color:var(--ink-muted);">per sak semen</div>
                         </td>
                         <td>
-                            <a href="?toggle=<?= $row['id'] ?>" class="badge <?= $row['status'] === 'aktif' ? 'badge-success' : 'badge-danger' ?>" style="text-decoration:none;" title="Klik untuk ubah status">
-                                <i class="bi bi-<?= $row['status'] === 'aktif' ? 'check-circle' : 'x-circle' ?>"></i>
-                                <?= $row['status'] === 'aktif' ? 'Aktif' : 'Nonaktif' ?>
-                            </a>
+                            <form method="POST" class="d-inline" onsubmit="return confirm('Ubah status pekerja ini?');">
+                                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                <input type="hidden" name="_method" value="toggle">
+                                <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                <button type="submit" class="badge <?= $row['status'] === 'aktif' ? 'badge-success' : 'badge-danger' ?>" style="text-decoration:none;border:0;background:none;cursor:pointer;" title="Klik untuk ubah status">
+                                    <i class="bi bi-<?= $row['status'] === 'aktif' ? 'check-circle' : 'x-circle' ?>"></i>
+                                    <?= $row['status'] === 'aktif' ? 'Aktif' : 'Nonaktif' ?>
+                                </button>
+                            </form>
                         </td>
                         <td class="text-end">
-                            <a href="?edit=<?= $row['id'] ?>" class="btn btn-light btn-sm" title="Edit pekerja" data-bs-toggle="modal" data-bs-target="#modalForm" data-edit-id="<?= $row['id'] ?>">
+                            <a href="?edit=<?= $row['id'] ?>" class="btn btn-light btn-sm" title="Edit pekerja">
                                 <i class="bi bi-pencil"></i> <span class="d-none d-sm-inline">Edit</span>
                             </a>
-                            <a href="?delete=<?= $row['id'] ?>" class="btn btn-danger btn-sm btn-delete" title="Hapus pekerja">
-                                <i class="bi bi-trash"></i>
-                            </a>
+                            <form method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
+                                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                <input type="hidden" name="_method" value="delete">
+                                <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                <button type="submit" class="btn btn-danger btn-sm btn-delete" title="Hapus pekerja">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -188,6 +229,7 @@ include __DIR__ . '/../layouts/header.php';
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                 <input type="hidden" name="id" id="formId" value="<?= $editItem['id'] ?? '' ?>">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-person-plus-fill"></i> <span id="modalTitle"><?= $editItem ? 'Edit' : 'Tambah' ?> Pekerja</span></h5>

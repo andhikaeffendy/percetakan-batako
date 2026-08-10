@@ -9,17 +9,30 @@ $db = getDB();
 $pageTitle = 'Data Produksi';
 $today = date('Y-m-d');
 
-// Handle Delete
-if (isset($_GET['delete'])) {
+// Handle Delete (POST)
+$deleteId = 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_method'] ?? '') === 'delete') {
+    requireCsrf('/pemilik/produksi.php');
+    $deleteId = (int)($_POST['id'] ?? 0);
+}
+if ($deleteId > 0) {
     $stmt = $db->prepare("DELETE FROM produksi WHERE id = ?");
-    $stmt->execute([$_GET['delete']]);
-    updateStok($db);
-    redirect('/pemilik/produksi.php', 'success', 'Data produksi berhasil dihapus.');
+    $stmt->execute([$deleteId]);
+    if ($stmt->rowCount() > 0) {
+        updateStok($db);
+        redirect('/pemilik/produksi.php', 'success', 'Data produksi berhasil dihapus.');
+    }
+    redirect('/pemilik/produksi.php', 'warning', 'Data produksi tidak ditemukan.');
 }
 
 // Handle Create/Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = $_POST['id'] ?? null;
+    requireCsrf('/produksi.php');
+    $rawId = trim((string)($_POST['id'] ?? ''));
+    if ($rawId !== '' && !ctype_digit($rawId)) {
+        redirect('/pemilik/produksi.php', 'warning', 'Data tidak valid.');
+    }
+    $id = $rawId === '' ? 0 : (int)$rawId;
     $tanggal = $_POST['tanggal_produksi'];
     $ukuran = $_POST['ukuran_batako'];
     $target = $_POST['target_produksi'];
@@ -32,6 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("UPDATE produksi SET tanggal_produksi=?, ukuran_batako=?, target_produksi=?, realisasi_produksi=?, jumlah_sak_semen=?, pekerja_id=?, operator_id=? WHERE id=?");
         $stmt->execute([$tanggal, $ukuran, $target, $realisasi, $sakSemen, $pekerjaId, $operatorId, $id]);
         updateStok($db);
+        if ($stmt->rowCount() === 0) {
+            $chk = $db->prepare("SELECT 1 FROM produksi WHERE id = ?");
+            $chk->execute([$id]);
+            if (!$chk->fetchColumn()) {
+                redirect('/pemilik/produksi.php', 'warning', 'Data produksi tidak ditemukan.');
+            }
+        }
         redirect('/pemilik/produksi.php', 'success', 'Data produksi berhasil diperbarui.');
     } else {
         $stmt = $db->prepare("INSERT INTO produksi (tanggal_produksi, ukuran_batako, target_produksi, realisasi_produksi, jumlah_sak_semen, pekerja_id, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -178,8 +198,11 @@ $pekerjaList = $db->query("SELECT id, nama_pekerja FROM pekerja WHERE status = '
 $editItem = null;
 if (isset($_GET['edit'])) {
     $stmt = $db->prepare("SELECT * FROM produksi WHERE id = ?");
-    $stmt->execute([$_GET['edit']]);
+    $stmt->execute([(int)$_GET['edit']]);
     $editItem = $stmt->fetch();
+    if (!$editItem) {
+        redirect('/pemilik/produksi.php', 'warning', 'Data produksi tidak ditemukan.');
+    }
 }
 
 include __DIR__ . '/../layouts/header.php';
@@ -189,7 +212,7 @@ include __DIR__ . '/../layouts/header.php';
     <div class="card-header">
         <h5><i class="bi bi-building"></i> Data Produksi</h5>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalForm">
+            <button class="btn btn-primary btn-sm" onclick="window.location.href='produksi.php'">
                 <i class="bi bi-plus-lg"></i> Tambah Data
             </button>
             <a href="produksi.php?export=excel" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
@@ -266,7 +289,12 @@ include __DIR__ . '/../layouts/header.php';
                         <td><?= e($row['operator_nama'] ?? '-') ?></td>
                         <td>
                             <a href="?edit=<?= $row['id'] ?>" class="btn btn-warning btn-sm" title="Edit"><i class="bi bi-pencil"></i></a>
-                            <a href="?delete=<?= $row['id'] ?>" class="btn btn-danger btn-sm btn-delete" title="Hapus"><i class="bi bi-trash"></i></a>
+                            <form method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
+                            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                            <input type="hidden" name="_method" value="delete">
+                            <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                            <button type="submit" class="btn btn-danger btn-sm btn-delete" title="Hapus"><i class="bi bi-trash"></i></button>
+                        </form>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -296,6 +324,7 @@ include __DIR__ . '/../layouts/header.php';
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                 <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
                 <div class="modal-header">
                     <h5 class="modal-title"><?= $editItem ? 'Edit' : 'Tambah' ?> Produksi</h5>

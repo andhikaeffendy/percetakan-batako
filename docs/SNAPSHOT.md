@@ -40,6 +40,9 @@ Updated: 2026-08-10 — source audit + create-CRUD fix verified end-to-end on lo
 - Bahan Baku create failed with `Call to undefined function validasiSatuanBahan()`: function only existed in dead helper `pemilik/functions.php`. Moved to active `helpers/functions.php` with strict Semen/Sak + Pasir/m³ validation.
 - Gaji silent-success: `$hasil` computed only on GET `hitung=1`; POST save looped over empty array yet still redirected "success". Now recomputes on POST, carries hidden period inputs, wraps inserts in a DB transaction, and refuses empty saves.
 
+## Root Causes Fixed (2026-08-10)
+- Tenaga Kerja edit created a duplicate: the `?edit=<id>` link also had Bootstrap modal trigger attributes, preventing navigation to the server-populated edit form; hidden `id` stayed empty, so POST took INSERT. Removed those trigger attributes. `tests/EditRouteRegression.php` statically verifies the edit link navigates, carries the hidden id contract, and reaches `UPDATE pekerja`.
+
 ## Risks to Preserve for Revision Planning
 - Source-embedded fallback database credentials in `config/database.php`.
 - CSRF helpers exist but are not used in production flows; owner deletion/toggle flows use GET.

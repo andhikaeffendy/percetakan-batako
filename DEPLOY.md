@@ -92,6 +92,7 @@ htdocs/
 ├── login.php
 ├── logout.php
 ├── .htaccess
+├── .env                    # WAJIB - kredensial DB (lihat Bagian 4). Jangan upload .env.example
 ├── composer.json
 ├── composer.lock
 ├── config/database.php
@@ -107,32 +108,39 @@ htdocs/
 ├── pemilik/penjualan.php
 ├── pemilik/tenaga_kerja.php
 ├── pemilik/gaji.php
+├── pemilik/pengeluaran.php
 ├── pemilik/laporan_produksi.php
 ├── pemilik/laporan_keuangan.php
 ├── pemilik/laporan_gaji.php
 ├── pemilik/persediaan.php
-├── pemilik/input_bahan_baku.php
-├── dashboard.php
-├── input_bahan_baku.php
-├── persediaan.php
-├── laporan_keuangan.php
-├── laporan_produksi.php
-├── pengeluaran.php
-├── tenaga_kerja.php
-├── gaji.php
-├── functions.php
-├── seeder.php
 ├── migrations/revisi_persediaan.sql
 ├── operator/index.php
 ├── operator/input_bahan_baku.php
 ├── operator/input_produksi.php
 ├── operator/input_penjualan.php
+├── operator/input_pengeluaran.php
 ├── assets/css/style.css
 ├── assets/js/app.js
 └── vendor/
 ```
 
 > ⚠️ **Pastikan file di `htdocs/` langsung** (bukan di subfolder seperti `htdocs/project/`).
+
+> 🔥 **Jika server sudah pernah di-deploy versi lama**, hapus file basi berikut dari `htdocs/` (versi lama-nya masih tersisa di server dan tidak lagi ada di project - kalau dibiarkan, URL `/pemilik/input_bahan_baku.php` masih bisa dibuka tanpa CSRF/validasi terbaru, dan duplikat root seperti `dashboard.php`/`persediaan.php` bisa membingungkan):
+>
+> ```text
+> pemilik/input_bahan_baku.php
+> dashboard.php
+> input_bahan_baku.php
+> persediaan.php
+> laporan_keuangan.php
+> laporan_produksi.php
+> pengeluaran.php
+> tenaga_kerja.php
+> gaji.php
+> functions.php
+> ```
+> Hapus lewat File Manager. File `functions.php` di root adalah salinan lama - yang dipakai cuma `helpers/functions.php`.
 
 ---
 

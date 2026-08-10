@@ -52,15 +52,19 @@ if ($harusHitung) {
 
 // Simpan ke tabel gaji. $hasil dihitung ulang dari POST di atas, bukan dari state GET yang hilang.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
+    requireCsrf('/pemilik/gaji.php');
     if (empty($hasil)) {
         redirect('/pemilik/gaji.php?periode_awal=' . urlencode($periodeAwal) . '&periode_akhir=' . urlencode($periodeAkhir) . '&hitung=1', 'warning', 'Tidak ada pekerja aktif untuk disimpan.');
     }
 
     $operatorId = $_SESSION['user_id'];
     $stmt = $db->prepare("INSERT INTO gaji (pekerja_id, periode_awal, periode_akhir, total_sak_semen, tarif_per_sak, panjar, total_gaji, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $deleteExisting = $db->prepare("DELETE FROM gaji WHERE pekerja_id = ? AND periode_awal = ? AND periode_akhir = ?");
     $db->beginTransaction();
     try {
         foreach ($hasil as $h) {
+            // Re-save replaces the same worker's calculated period, preventing duplicates on retry.
+            $deleteExisting->execute([$h['pekerja_id'], $periodeAwal, $periodeAkhir]);
             $stmt->execute([$h['pekerja_id'], $periodeAwal, $periodeAkhir, $h['total_sak'], $h['tarif'], $h['panjar'], $h['total_gaji'], $operatorId]);
         }
         $db->commit();
@@ -108,6 +112,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <?php if (!empty($hasil)): ?>
 <form method="POST" id="formGaji">
+<input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
 <input type="hidden" name="periode_awal" value="<?= e($periodeAwal) ?>">
 <input type="hidden" name="periode_akhir" value="<?= e($periodeAkhir) ?>">
 <div class="row g-3 mb-4">

@@ -11,6 +11,7 @@ $today = date('Y-m-d');
 $success = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/input_bahan_baku.php');
     $tanggal = $_POST['tanggal_penggunaan'];
     $jenisTransaksi = ($_POST['aksi'] ?? 'penggunaan') === 'pembelian' ? 'pembelian' : 'penggunaan';
     $jenis = $_POST['jenis_bahan'];
@@ -21,7 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validasi backend: Semen wajib Sak, Pasir wajib m3
     $errSatuan = validasiSatuanBahan((string)$jenis, (string)$satuan);
-    if ($errSatuan) {
+    if (!in_array($jenis, ['semen', 'pasir'], true)) {
+        $error = 'Jenis bahan tidak valid.';
+    } elseif ($tanggal === '' || $tanggal === null || !strtotime($tanggal)) {
+        $error = 'Tanggal tidak valid.';
+    } elseif (!is_numeric($jumlah) || (float)$jumlah <= 0) {
+        $error = 'Jumlah harus angka positif.';
+    } elseif ($errSatuan) {
         $error = $errSatuan;
     } else {
         $stmt = $db->prepare("INSERT INTO bahan_baku (tanggal_penggunaan, jenis_transaksi, jenis_bahan, jumlah, satuan, keterangan, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -50,6 +57,7 @@ include __DIR__ . '/../layouts/header.php';
                 <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> <?= e($error) ?></div>
                 <?php endif; ?>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="form-group">

@@ -139,3 +139,12 @@ function verifyCsrf(string $token): bool {
     if (session_status() === PHP_SESSION_NONE) session_start();
     return hash_equals($_SESSION['csrf_token'] ?? '', $token);
 }
+
+/**
+ * Wajibkan token CSRF valid sebelum mutasi; redirect + flash bila gagal.
+ */
+function requireCsrf(string $url, string $pesan = 'Sesi berakhir atau token tidak valid. Silakan coba lagi.'): void {
+    if (!verifyCsrf($_POST['csrf_token'] ?? '')) {
+        redirect($url, 'danger', $pesan);
+    }
+}

@@ -12,15 +12,27 @@ $success = false;
 $kategoriList = $db->query("SELECT id, nama_kategori FROM kategori_pengeluaran WHERE status = 'aktif' ORDER BY nama_kategori")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/input_pengeluaran.php');
     $tanggal = $_POST['tanggal_pengeluaran'];
     $kategoriId = $_POST['kategori_pengeluaran_id'];
     $nominal = $_POST['nominal'];
     $keterangan = $_POST['keterangan'] ?? '';
     $operatorId = $_SESSION['user_id'];
 
+    $error = null;
+    if ($tanggal === '' || !strtotime($tanggal)) { $error = 'Tanggal tidak valid.'; }
+    elseif (!ctype_digit((string)$kategoriId) || (int)$kategoriId <= 0) { $error = 'Kategori tidak valid.'; }
+    elseif (!is_numeric($nominal) || (float)$nominal <= 0) { $error = 'Nominal harus angka positif.'; }
+    if (!$error) {
+        $cek = $db->prepare("SELECT id FROM kategori_pengeluaran WHERE id = ? AND status = 'aktif'");
+        $cek->execute([(int)$kategoriId]);
+        if (!$cek->fetchColumn()) { $error = 'Kategori tidak ditemukan atau tidak aktif.'; }
+    }
+    if (!$error) {
     $stmt = $db->prepare("INSERT INTO pengeluaran (tanggal_pengeluaran, kategori_pengeluaran_id, nominal, keterangan, operator_id) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$tanggal, $kategoriId, $nominal, $keterangan, $operatorId]);
-    $success = true;
+        $stmt->execute([$tanggal, (int)$kategoriId, $nominal, $keterangan, $operatorId]);
+        $success = true;
+    }
 }
 
 $stmt = $db->prepare("SELECT COALESCE(SUM(p.nominal), 0) as total, COUNT(*) as transaksi FROM pengeluaran p WHERE p.tanggal_pengeluaran = ?");
@@ -42,6 +54,7 @@ include __DIR__ . '/../layouts/header.php';
                 <div class="alert alert-success"><i class="bi bi-check-circle"></i> Data pengeluaran berhasil disimpan!</div>
                 <?php endif; ?>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="form-group">

@@ -1,6 +1,6 @@
 <?php
 // config/database.php
-// Koneksi database PDO — .env (prioritas) atau production fallback
+// Koneksi database PDO - kredensial hanya dari .env (fail-fast bila kosong)
 
 // Load .env jika ada
 $envLoaded = false;
@@ -15,21 +15,20 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     }
 }
 
-// Fallback production (InfinityFree)
-$production = [
-    'DB_HOST' => 'sql105.infinityfree.com',
-    'DB_NAME' => 'if0_42059089_batako_maros',
-    'DB_USER' => 'if0_42059089',
-    'DB_PASS' => 'Batako2026',
-];
-
-foreach ($production as $key => $fallback) {
+// Credentials live ONLY in .env (see .env.example). No hardcoded fallbacks.
+$required = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS'];
+if (!$envLoaded) {
+    http_response_code(500);
+    die('Konfigurasi database tidak ditemukan. Salin .env.example ke .env dan isi kredensial.');
+}
+foreach ($required as $key) {
     if (!defined($key)) {
-        if ($envLoaded) {
-            define($key, $_ENV[$key] ?? '');
-        } else {
-            define($key, $fallback);
+        $value = $_ENV[$key] ?? (getenv($key) ?: '');
+        if ($value === '') {
+            http_response_code(500);
+            die('Variabel lingkungan ' . $key . ' belum diatur di .env.');
         }
+        define($key, $value);
     }
 }
 

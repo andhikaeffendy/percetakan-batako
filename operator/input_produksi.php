@@ -14,6 +14,7 @@ $success = false;
 $pekerjaList = $db->query("SELECT id, nama_pekerja FROM pekerja WHERE status = 'aktif' ORDER BY nama_pekerja")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/input_produksi.php');
     $tanggal = $_POST['tanggal_produksi'];
     $ukuran = $_POST['ukuran_batako'];
     $target = $_POST['target_produksi'];
@@ -22,11 +23,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pekerjaId = $_POST['pekerja_id'];
     $operatorId = $_SESSION['user_id'];
 
+    $error = null;
+    if ($tanggal === '' || !strtotime($tanggal)) { $error = 'Tanggal tidak valid.'; }
+    elseif (!in_array($ukuran, ['standar', 'besar'], true)) { $error = 'Ukuran batako tidak valid.'; }
+    elseif (!is_numeric($target) || (float)$target < 0) { $error = 'Target produksi tidak valid.'; }
+    elseif (!is_numeric($realisasi) || (float)$realisasi < 0) { $error = 'Realisasi produksi tidak valid.'; }
+    elseif ((float)$realisasi > (float)$target) { $error = 'Realisasi tidak boleh melebihi target.'; }
+    elseif (!is_numeric($sakSemen) || (float)$sakSemen < 0) { $error = 'Jumlah sak semen tidak valid.'; }
+    elseif (!ctype_digit((string)$pekerjaId) || (int)$pekerjaId <= 0) { $error = 'Pekerja tidak valid.'; }
+    else {
+        $cek = $db->prepare("SELECT id FROM pekerja WHERE id = ? AND status = 'aktif'");
+        $cek->execute([(int)$pekerjaId]);
+        if (!$cek->fetchColumn()) { $error = 'Pekerja tidak ditemukan atau tidak aktif.'; }
+    }
+    if (!$error) {
     $stmt = $db->prepare("INSERT INTO produksi (tanggal_produksi, ukuran_batako, target_produksi, realisasi_produksi, jumlah_sak_semen, pekerja_id, operator_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$tanggal, $ukuran, $target, $realisasi, $sakSemen, $pekerjaId, $operatorId]);
+        $stmt->execute([$tanggal, $ukuran, $target, $realisasi, $sakSemen, (int)$pekerjaId, $operatorId]);
 
-    updateStok($db);
-    $success = true;
+        updateStok($db);
+        $success = true;
+    }
 }
 
 include __DIR__ . '/../layouts/header.php';
@@ -44,6 +60,7 @@ include __DIR__ . '/../layouts/header.php';
                 <div class="alert alert-success"><i class="bi bi-check-circle"></i> Data produksi harian berhasil disimpan! Stok otomatis diperbarui.</div>
                 <?php endif; ?>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="form-group">

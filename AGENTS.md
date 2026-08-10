@@ -53,7 +53,7 @@ find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 /opt/homebre
 | Owner data | `pemilik/bahan_baku.php`, `produksi.php`, `penjualan.php`, `tenaga_kerja.php`, `pengeluaran.php`, `gaji.php`, `persediaan.php` | pemilik | CRUD + payroll + stock monitor |
 | Owner reports | `pemilik/dashboard.php`, `laporan_produksi.php`, `laporan_keuangan.php`, `laporan_gaji.php` | pemilik | aggregate reads; PDF/Excel where implemented |
 
-Note: `pemilik/input_bahan_baku.php` is an operator-role page (same form as operator copy); do not treat it as an owner CRUD page.
+Note: `pemilik/input_bahan_baku.php` was an operator-role page in the owner directory; removed 2026-08-10 (dead duplicate). Operator uses `operator/input_bahan_baku.php`.
 
 ## Database Contract
 Schema sources: `database.sql` (local), `deploy_all.sql` (hosting deploy + seeded users), `migrations/revisi_persediaan.sql` (additive stock revision).
