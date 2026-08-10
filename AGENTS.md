@@ -3,6 +3,7 @@
 ## Identity
 - Native PHP operational system for Percetakan Batako Maros (Ambon).
 - PHP >=7.4, MySQL/InnoDB, Composer. No framework/build step.
+- Dependency pin (2026-08-10): dompdf ^3.1, phpspreadsheet pinned 1.29.7 + zipstream ^2.2 — kompatibel PHP 8.2 client (XAMPP); jangan naikkan phpspreadsheet ke 1.30.x tanpa memastikan ext-gd/ext-zip/php 8.3 tersedia di semua target.
 - Web root is the repository root. `.htaccess` sends non-file routes to `index.php`.
 - Absolute repository path: `/Users/avowsmacbook/Andhika/Joki/umkm-percetakan-batako`.
 

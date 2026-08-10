@@ -7,6 +7,7 @@ Updated: 2026-08-10 — source audit + create-CRUD fix verified end-to-end on lo
 - Branch: `main`
 - Product: operational information system for Percetakan Batako Maros, Ambon.
 - Stack: native PHP >=7.4, MySQL/InnoDB/PDO, Composer; Bootstrap 5.3 + Bootstrap Icons CDN; Chart.js on reporting/dashboard pages.
+- Dependency pin (2026-08-10): dompdf 3.1.6, phpspreadsheet 1.29.7, zipstream 2.4.0 — lock dikunci agar composer install polos jalan di XAMPP PHP 8.2 tanpa ext-gd/ext-zip. 12 advisory phpspreadsheet 1.29.7 semuanya pada reader; app hanya memakai Writer\Xlsx.
 - Source size: ~4,200 PHP lines excluding `vendor/`.
 
 ## Runtime Shape

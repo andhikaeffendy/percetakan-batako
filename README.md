@@ -151,6 +151,8 @@ Semua software di bawah **WAJIB** diinstall satu per satu.
 
 XAMPP adalah paket yang berisi Apache (web server), MySQL (database), dan PHP.
 
+**Requirement PHP:** project ini kompatibel dengan **PHP 8.0 – 8.3** (diuji pada PHP 8.2.x). Jangan pakai PHP 7.x — dompdf 3.x (dependency PDF) sudah tidak mendukungnya.
+
 **Download & Install:**
 1. Buka https://www.apachefriends.org
 2. Klik **Download** (versi terbaru untuk Windows)
@@ -277,6 +279,8 @@ cd C:\xampp\htdocs\percetakan-batako
 composer install
 ```
 Tunggu 1-3 menit. Folder `vendor/` akan terisi.
+
+> **Penting:** jalankan `composer install` **tanpa flag tambahan**. Jangan pakai `composer update --ignore-platform-*` — itu akan menaikkan versi library (PhpSpreadsheet/zipstream) yang butuh PHP 8.3+ dan memunculkan error di laptop dengan PHP 8.2. `composer.lock` di repo ini sudah dikunci agar kompatibel dengan PHP 8.2 (dompdf 3.1.x, PhpSpreadsheet 1.29.x, zipstream 2.4.x).
 
 ### Step 3: Setup .env
 
@@ -493,7 +497,8 @@ Suite otomatis `tests/TestRunner.php` berisi ~87 assertion checks untuk koneksi 
 | Masalah | Solusi |
 |---------|--------|
 | **"Koneksi database gagal"** | Pastikan MySQL running di XAMPP. Cek `DB_USER` dan `DB_PASS` di `.env` |
-| **Blank page / Error 500** | Cek versi PHP ≥ 7.4. Jalankan `composer install` ulang |
+| **Blank page / Error 500** | Cek versi PHP (harus 8.0 – 8.3). Jalankan `composer install` ulang |
+| **"Composer: php >= 8.3 required / php-64bit"** | Versi library ter-lock butuh PHP 8.3. Solusi: aktifkan ekstensi `gd` + `zip` di `php.ini` XAMPP (cari `;extension=gd` dan `;extension=zip`, hilangkan titik koma), lalu jalankan `composer install` lagi |
 | **CSS/JS tidak muncul** | Pastikan base URL sesuai. Cek `.htaccess` Apache. |
 | **Login gagal terus** | Cek user di tabel `users`. Jalankan ulang `php seeder.php` |
 | **"Class 'PDO' not found"** | Aktifkan extension `pdo_mysql` di `php.ini` XAMPP |
